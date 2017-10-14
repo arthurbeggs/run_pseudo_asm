@@ -9,7 +9,6 @@ int main(int argc, char const *argv[]) {
 }
 
 
-
 int valid_command(int count, char const *arguments[]){
     char * temp;
     if ( \
@@ -25,5 +24,5 @@ int valid_command(int count, char const *arguments[]){
         printf("%s", man_message);
         return 1;
     }
-    else return 0;  // Bad arguments
+    else return 0;
 }
