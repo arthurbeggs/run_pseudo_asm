@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 
-char const * man_message = "************************************************\
-*************\n\
+char const * man_message = "\
+*************************************************************\n\
 *********         Montador Pseudo-Assembly          *********\n\
 *************************************************************\n\n\
                     Argumentos inválidos!\n\n\

@@ -2,11 +2,29 @@
 
 int main(int argc, char const *argv[]) {
 
-    valid_command(argc, argv);
+    if ( valid_command(argc, argv) ){           // Teste de argumentos
+        return 1;
+    }
+
+    if ( !(strcmp(arguments[1], "-p")) ){       // Pré-processamento
+        pre_processamento();    // FIXME
+    }
+
+    else if ( !(strcmp(arguments[1], "-m")) ) { // Expansão de macros
+        pre_processamento();    // FIXME
+        expansao_de_macros();   // FIXME
+    }
+
+    else {                                      // Montagem
+        pre_processamento();    // FIXME
+        expansao_de_macros();   // FIXME
+        montagem();             // FIXME
+    }
 
 
     return 0;
 }
+
 
 
 int valid_command(int count, char const *arguments[]){
