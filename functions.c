@@ -4,8 +4,6 @@
 // Desenvolvido por: Amanda Alina da Cruz Silva  13/0100153   //
 //                   Arthur de Matos Beggs       12/0111098   //
 ////////////////////////////////////////////////////////////////
-//   Preprocessamento: Somente avalia as diretivas EQU e IF.  //
-////////////////////////////////////////////////////////////////
 
 #include "functions.h"
 
@@ -23,7 +21,7 @@ int read_file_line(FILE *input_file, char *output_string){
 }
 
 
-// Lê um token de uma linha.
+// Lê o primeiro token de uma linha.
 int get_next_token(char *input_line, char *output_token){
     char *temp;
 
@@ -36,7 +34,7 @@ int get_next_token(char *input_line, char *output_token){
     if ( temp = strstr(output_token, ",") ){
         // Se a posição da vírgula estiver em output_token[0], "apaga" o resto do token.
         if (temp == output_token) *(temp+1) = '\0';
-        // Senão "apaga" o resto do token, inclusive a vírgula.
+        // Senão, "apaga" o resto do token, inclusive a vírgula.
         else *temp = '\0';
     }
 
@@ -44,7 +42,7 @@ int get_next_token(char *input_line, char *output_token){
     else if ( temp = strstr(output_token, "+") ){
         // Se a posição do "+" estiver em output_token[0], "apaga" o resto do token.
         if (temp == output_token) *(temp+1) = '\0';
-        // Senão "apaga" o resto do token, inclusive o "+".
+        // Senão, "apaga" o resto do token, inclusive o "+".
         else *temp = '\0';
     }
 
@@ -52,6 +50,11 @@ int get_next_token(char *input_line, char *output_token){
     return ( strlen(output_token) - 1 );
 }
 
-void get_line_tokens(){
-//TODO: Usar strstr pra obter posição do último token lido e somar seu tamanho para pegar próximo token
+
+// Extrai os tokens de uma linha.
+void get_line_tokens(FILE *input_file){
+    //TODO: Usar strstr pra obter posição do último token lido e somar seu tamanho para pegar próximo token
+
+    char line_retrieved[ MAX_LINE_WIDTH + 1 ];
+    char *line_ptr = line_retrieved;
 }

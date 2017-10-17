@@ -6,11 +6,28 @@
 ////////////////////////////////////////////////////////////////
 
 #define MAX_LINE_WIDTH 500
+#define MAX_IDENTIFIER_WIDTH 100
+
+// Enumeração dos tipos de token existentes.
+// Undefined é um token não avaliado, e invalid é um token inválido.
+typedef enum { undefined = 0, label, instruction, directive, symbol, number, comma, plus, minus, invalid } token_type;
+
+
+//TODO: Implementar como lista duplamente encadeada
+typedef struct token_t{
+    char token_identifier[ MAX_IDENTIFIER_WIDTH +1 ];
+    token_type type;        // Tipo do token;
+    int source_file_line;   // Linha do arquivo original;
+    int output_file_byte;   // Posição de memoria no arquivo de saída;
+    token_t *prev;          // Ponteiro para o token anterior;
+    token_t *next;          // Ponteiro para o próximo token;
+}token_t;
 
 
 // Lê uma linha do arquivo de entrada e salva a linha no buffer fornecido.
 // Retorna caso o arquivo tenha terminado.
 int read_file_line(FILE *input_file, char *output_string);
 
-// Lê um token de uma linha.
+
+// Lê o primeiro token de uma linha.
 int get_next_token(char *input_line, char *output_token)
