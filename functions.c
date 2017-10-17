@@ -9,7 +9,7 @@
 
 // Lê uma linha do arquivo de entrada e salva a linha no buffer fornecido.
 // Retorna caso o arquivo tenha terminado.
-int read_file_line(FILE *input_file, char *output_string){
+void read_file_line(FILE *input_file, char *output_string){
     // Comportamento do scanset definido:
     // %*[ \t] ignora espaços e tabs no início da linha;
     // %[^;\r\n] lê o restante da linha (máximo de 500 caracteres), para ao encontrar a primeira ocorrência de um comentário (;) ou um carriage return(\r) ou um line feed (\n) e salva a string lida em output_string;
@@ -17,18 +17,20 @@ int read_file_line(FILE *input_file, char *output_string){
     // %*[\r\n] lê o identificador de final de linha e o descarta. Funciona para identificador LF, CR e CRLF;
     //NOTE: Se o tamanho da macro MAX_LINE_WIDTH for alterado (!= 500), é necessário alterar o tamanho máximo do 2º parâmetro do scanset.
 
-    return fscanf(input_file, "%*[ \t]%500[^;\r\n]%*[^\r\n]%*[\r\n]",  output_string);
+    fscanf(input_file, "%*[ \t]%500[^;\r\n]%*[^\r\n]%*[\r\n]",  output_string);
 }
 
 
 // Lê o primeiro token de uma linha.
+// Retorna a quantidade de caracteres do token (desconsiderando '\0').
 int get_next_token(char *input_line, char *output_token){
     char *temp;
 
     // Comportamento do scanset definido:
     // %*[ \t] ignora espaços e tabs que antecedem o token;
-    // %[^ \t] lê o restante da linha, para ao encontrar a primeira ocorrência de um espaço ou tab e salva a string lida em output_token (não separa tokens "," e "+" quando );
-    sscanf(input_line, "%*[ \t]%[^ \t]", output_token);
+    // %[^ \t] lê o restante da linha (máximo de 100 caracteres), para ao encontrar a primeira ocorrência de um espaço ou tab e salva a string lida em output_token (não separa tokens ",", "+" e "-" quando emendados a outros tokens);
+    //NOTE: Se o tamanho da macro MAX_IDENTIFIER_WIDTH for alterado (!= 500), é necessário alterar o tamanho máximo do 2º parâmetro do scanset.
+    sscanf(input_line, "%*[ \t]%100[^ \t]", output_token);
 
     // Testa se o token possui uma vírgula e a separa caso precise
     if ( temp = strstr(output_token, ",") ){
@@ -46,15 +48,167 @@ int get_next_token(char *input_line, char *output_token){
         else *temp = '\0';
     }
 
-    // Retorna a quantidade de caracteres de output_token (desconsiderando '\0')
-    return ( strlen(output_token) - 1 );
+    // Testa se o token possui um - e o separa caso precise
+    else if ( temp = strstr(output_token, "-") ){
+        // Se a posição do "-" estiver em output_token[0], "apaga" o resto do token.
+        if (temp == output_token) *(temp+1) = '\0';
+        // Senão, "apaga" o resto do token, inclusive o "-".
+        else *temp = '\0';
+    }
+
+    // Retorna a quantidade de caracteres de output_token
+    return ( strlen(output_token) );
 }
 
 
 // Extrai os tokens de uma linha.
-void get_line_tokens(FILE *input_file){
-    //TODO: Usar strstr pra obter posição do último token lido e somar seu tamanho para pegar próximo token
+void generate_line_tokens_list(FILE *input_file, token_t *token_list, int line_count, int byte_count){
 
-    char line_retrieved[ MAX_LINE_WIDTH + 1 ];
-    char *line_ptr = line_retrieved;
+    // Linha recuperada do arquivo.
+    char retrieved_line[ MAX_LINE_WIDTH + 1 ];
+    // Ponteiro para a linha recuperada.
+    char *line_ptr;
+
+    // Token recuperado da linha.
+    char retrieved_token_id[ MAX_IDENTIFIER_WIDTH + 1];
+    // Tamanho do token recuperado.
+    int  retrieved_token_length;
+
+    // Ponteiro para o último nó criado da lista de tokens.
+    token_t *last_created_node;
+
+    line_ptr = retrieved_line;
+    last_created_node = NULL
+
+
+    read_file_line(input_file, retrieved_line);
+
+    do {
+        retrieved_token_length = get_next_token(line_ptr, retrieved_token_id);
+
+        convert_string_to_all_caps(retrieved_token_id);
+
+        last_created_node = insert_node_at_list_end(token_list, retrieved_token_id, line_count, byte_count);
+
+        define_token_type(last_created_node);
+
+        // Ponteiro da linha aponta para o primeiro caracter da linha após o último caracter do token recuperado.
+        line_ptr = strstr(line_ptr, retrieved_token_id) + retrieved_token_length;
+
+    } while ( retrieved_token_length );
+
 }
+
+// Salva no nó o tipo do token
+void define_token_type(token_t *node){
+    char *temp;
+
+    // Testa se o token possui ":" (símbolo exclusivo de labels)
+    if (   ( temp = strstr(node->token_identifier, ":") ) \
+        && ( temp != NULL ) \
+    ){
+        // Se o ":" não for o último caracter do identificador, define o tipo como "invalid".
+        if ( (temp+1) != '\0' ) node->type = invalid;
+
+        else{
+            // Remove o ":" do final do token
+            *temp = '\0';
+
+            // Se o símbolo for válido, define tipo como "label"
+            if ( is_symbol(node->token_identifier) ) node->type = label;
+
+            // Se o símbolo não for válido, define tipo como "invalid".
+            else node->type = invalid;
+        }
+    }
+    else if ( is_directive(node->token_identifier) )   node->type = directive;
+    else if ( is_instruction(node->token_identifier) ) node->type = instruction;
+    else if ( is_symbol(node->token_identifier) )      node->type = symbol;
+    else if ( is_number(node->token_identifier) )      node->type = number;
+    else if ( is_char(node->token_identifier, ",") )   node->type = comma;
+    else if ( is_char(node->token_identifier, "+") )   node->type = plus;
+    else if ( is_char(node->token_identifier, "-") )   node->type = minus;
+    else node->type = invalid;
+}
+
+
+// Testa se o token é um símbolo
+int is_symbol(char *id){
+    char temp[ MAX_IDENTIFIER_WIDTH ];
+
+    // Scanset definido:
+    // %*[0-9]: ignora números no início da string;
+    // %[_A-Z0-9]: lê o restante da string e para de ler se encontrar um caracter inválido;
+    // %*s: ignora o restante da linha, caso existir.
+    sscanf(id, "%*[0-9]%[_A-Z0-9]%*s", temp);
+
+    // Se temp == id, retorna 1. Senão, retorna 0.
+    if ( !(strcmp(id, temp)) ) return 1;
+    else return 0;  // Falso
+}
+
+
+// Testa se o token é um número
+int is_number(char *id){
+    char temp;
+
+    // Se o retorno de sscanf for diferente de zero, significa que a string lida não é um número.
+    if ( ( id == strstr(id, "0X") ) \
+        && !( sscanf(id+2, "%*[A-F0-9]%c", temp) ) ) return 1;
+    else if ( !( sscanf(id, "%*[0-9]%c", temp) ) )   return 1;
+    else return 0; // Falso
+}
+
+
+// Testa se o token é igual ao caracter fornecido
+int is_char(char *id, const char *character){
+    if ( ( strstr(id, character) == id ) && ( strlen(id) == 1 ) ) return 1;
+    else return 0; // Falso
+}
+
+
+// Testa se o token é uma diretiva
+int is_directive(char *id){
+    if ( !(strcmp(id, "SECTION")) )     return 1;
+    else if ( !(strcmp(id, "SPACE")) )  return 1;
+    else if ( !(strcmp(id, "CONST")) )  return 1;
+    else if ( !(strcmp(id, "EQU")) )    return 1;
+    else if ( !(strcmp(id, "IF")) )     return 1;
+    else if ( !(strcmp(id, "MACRO")) )  return 1;
+    else if ( !(strcmp(id, "END")) )    return 1;
+    else return 0; // Falso
+}
+
+
+// Testa se o token é uma istrução
+int is_instruction(char *id){
+    if ( !(strcmp(id, "ADD")) )         return 1;
+    else if ( !(strcmp(id, "SUB")) )    return 1;
+    else if ( !(strcmp(id, "MULT")) )   return 1;
+    else if ( !(strcmp(id, "DIV")) )    return 1;
+    else if ( !(strcmp(id, "JMP")) )    return 1;
+    else if ( !(strcmp(id, "JMPN")) )   return 1;
+    else if ( !(strcmp(id, "JMPP")) )   return 1;
+    else if ( !(strcmp(id, "JMPZ")) )   return 1;
+    else if ( !(strcmp(id, "COPY")) )   return 1;
+    else if ( !(strcmp(id, "LOAD")) )   return 1;
+    else if ( !(strcmp(id, "STORE")) )  return 1;
+    else if ( !(strcmp(id, "INPUT")) )  return 1;
+    else if ( !(strcmp(id, "OUTPUT")) ) return 1;
+    else if ( !(strcmp(id, "STOP")) )   return 1;
+    else return 0; // Falso
+}
+
+
+// Converte as letras minúsculas para maiúsculas.
+void convert_string_to_all_caps(char *id){
+    char *temp;
+
+    for ( temp = id ; *temp != '\0' ; temp++ ){
+        if ( ( *temp >= 'a' ) && ( *temp <= 'z' ) ) *temp = *temp - 32;
+    }
+}
+
+
+
+token_t * insert_node_at_list_end(token_t *token_list, char *retrieved_token_id, int line_count, int byte_count);   //TODO: Implementar

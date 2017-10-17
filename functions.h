@@ -26,8 +26,9 @@ typedef struct token_t{
 
 // Lê uma linha do arquivo de entrada e salva a linha no buffer fornecido.
 // Retorna caso o arquivo tenha terminado.
-int read_file_line(FILE *input_file, char *output_string);
+void read_file_line(FILE *input_file, char *output_string);
 
 
 // Lê o primeiro token de uma linha.
-int get_next_token(char *input_line, char *output_token)
+// Retorna a quantidade de caracteres do token (desconsiderando '\0').
+int get_next_token(char *input_line, char *output_token);
