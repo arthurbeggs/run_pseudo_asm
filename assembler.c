@@ -5,7 +5,8 @@
 //                   Arthur de Matos Beggs       12/0111098   //
 ////////////////////////////////////////////////////////////////
 
-#include "assembler.h"
+#include "functions.h"
+#include "pre_processamento.h"
 
 int main(int argc, char const *argv[]) {
 
@@ -13,41 +14,21 @@ int main(int argc, char const *argv[]) {
         return 1;
     }
 
-    if ( !(strcmp(arguments[1], "-p")) ){       // Pré-processamento
-        pre_processamento();    // FIXME
+    if ( !(strcmp(argv[1], "-p")) ){       // Pré-processamento
+        pre_processamento(argv[2], argv[3]);
     }
 
-    else if ( !(strcmp(arguments[1], "-m")) ) { // Expansão de macros
-        pre_processamento();    // FIXME
-        expansao_de_macros();   // FIXME
+    else if ( !(strcmp(argv[1], "-m")) ) { // Expansão de macros
+        pre_processamento(argv[2], argv[3]);
+        // expansao_de_macros();   // FIXME
     }
 
     else {                                      // Montagem
-        pre_processamento();    // FIXME
-        expansao_de_macros();   // FIXME
-        montagem();             // FIXME
+        pre_processamento(argv[2], argv[3]);
+        // expansao_de_macros();   // FIXME
+        // montagem();             // FIXME
     }
 
 
     return 0;
-}
-
-
-
-int valid_command(int count, char const *arguments[]){
-    char * temp;
-    if ( \
-        (count != 4) \
-        || (   (strcmp(arguments[1], "-p")) \
-            && (strcmp(arguments[1], "-m")) \
-            && (strcmp(arguments[1], "-o")) ) \
-        || ( (temp = strstr(arguments[2], ".asm")) == NULL) \
-        || ( (*(temp+4)) != '\0') \
-        || ( (temp = strstr(arguments[3], ".o")) == NULL) \
-        || ( (*(temp+2)) != '\0') \
-    ) {
-        printf("%s", man_message);
-        return 1;
-    }
-    else return 0;
 }
