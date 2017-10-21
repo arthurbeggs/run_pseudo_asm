@@ -1,6 +1,13 @@
 # Ignored Files
 ~*
 *~
-assembler
 
+# Linter
 *.gch
+
+# Project Specific
+assembler
+*.o
+*.pre
+*.tmp
+*.mcr
