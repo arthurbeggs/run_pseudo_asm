@@ -15,34 +15,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "error_messages.h"
+
 
 // Definições de macros
 #define MAX_LINE_WIDTH 500
 #define MAX_IDENTIFIER_WIDTH 100
-
-#define MAN_MESSAGE "\
-*************************************************************\n\
-*********         Montador Pseudo-Assembly          *********\n\
-*************************************************************\n\n\
-                    Argumentos inválidos!\n\n\
-  Modo de uso:\n\
-   > %s -p <source_file> <output_file>\n\
-     Pré-processamento do código.\n\
-       - <source_file> deve ter extensão .asm;\n\
-       - <output_file> deve ter extensão .o;\n\
-       - <output_file> será concatenado com a \
-extensão .pre .\n\n\
-   > %s -m <source_file> <output_file>\n\
-     Processamento de macros.\n\
-       - <source_file> deve ter extensão .asm;\n\
-       - <output_file> deve ter extensão .o;\n\
-       - <output_file> será concatenado com a \
-extensão .mcr .\n\n\
-   > %s -o <source_file> <output_file>\n\
-     Realiza a montagem do código.\n\
-       - <source_file> deve ter extensão .asm;\n\
-       - <output_file> deve ter extensão .o . \n\n\
-*************************************************************\n"
 
 
 // Definições de tipos
@@ -57,9 +35,16 @@ typedef struct token_t{
     token_type type;        // Tipo do token;
     int source_file_line;   // Linha do arquivo original;
     int output_file_byte;   // Posição de memoria no arquivo de saída;
-    struct token_t *prev;          // Ponteiro para o token anterior;
-    struct token_t *next;          // Ponteiro para o próximo token;
+    struct token_t *prev;   // Ponteiro para o token anterior;
+    struct token_t *next;   // Ponteiro para o próximo token;
 }token_t;
+
+
+typedef struct table_t{
+    char symbol[ MAX_IDENTIFIER_WIDTH +1 ];
+    int  value;
+    struct table_t *next;
+}table_t;
 
 
 
@@ -118,7 +103,7 @@ token_t * insert_node_at_list_end(token_t **token_list, char *retrieved_token_id
 
 
 // Desaloca lista
-void remove_token_list(token_t *token_list);
+void erase_token_list(token_t *token_list);
 
 
 
@@ -222,8 +207,9 @@ void generate_line_tokens_list(FILE *source_file, token_t *token_list, int line_
 
     read_file_line(source_file, retrieved_line);
 
-    do {
-        retrieved_token_length = get_next_token(line_ptr, retrieved_token_id);
+    retrieved_token_length = get_next_token(line_ptr, retrieved_token_id);
+
+     while ( retrieved_token_length ) {
 
         convert_string_to_all_caps(retrieved_token_id);
 
@@ -234,7 +220,8 @@ void generate_line_tokens_list(FILE *source_file, token_t *token_list, int line_
         // Ponteiro da linha aponta para o primeiro caracter da linha após o último caracter do token recuperado.
         line_ptr = strstr(line_ptr, retrieved_token_id) + retrieved_token_length;
 
-    } while ( retrieved_token_length );
+        retrieved_token_length = get_next_token(line_ptr, retrieved_token_id);
+    }
 
 }
 
@@ -380,7 +367,7 @@ token_t * insert_node_at_list_end(token_t **token_list, char *retrieved_token_id
 
 
 // Desaloca lista
-void remove_token_list(token_t *token_list){
+void erase_token_list(token_t *token_list){
     token_t *temp;
 
     while ( token_list ){
