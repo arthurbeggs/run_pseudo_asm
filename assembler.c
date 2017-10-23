@@ -7,8 +7,12 @@
 
 #include "functions.h"
 #include "pre_processamento.h"
+#include "processa_macros.h"
 
 int main(int argc, char const *argv[]) {
+
+    // Guarda nome do arquivo temporário para ser possível excluí-lo.
+    char temp[ MAX_IDENTIFIER_WIDTH + 10 ];
 
     if ( valid_command(argc, argv) ){           // Teste de argumentos
         return 1;
@@ -16,17 +20,37 @@ int main(int argc, char const *argv[]) {
 
     if ( !(strcmp(argv[1], "-p")) ){       // Pré-processamento
         pre_processamento(argv[2], argv[3]);
+
+        // Apaga arquivo *.pre.tmp
+        strcpy(temp, argv[3]);
+        remove(strcat(temp, ".pre.tmp"));
     }
 
     else if ( !(strcmp(argv[1], "-m")) ) { // Expansão de macros
         pre_processamento(argv[2], argv[3]);
-        // expansao_de_macros();   // FIXME
+        processa_macros(argv[3]);
+
+        // Apaga arquivo *.pre.tmp
+        strcpy(temp, argv[3]);
+        remove(strcat(temp, ".pre.tmp"));
+
+        // Apaga arquivo *.mnt.tmp
+        strcpy(temp, argv[3]);
+        remove(strcat(temp, ".mcr.tmp"));
     }
 
     else {                                      // Montagem
         pre_processamento(argv[2], argv[3]);
-        // expansao_de_macros();   // FIXME
+        processa_macros(argv[3]);
         // montagem();             // FIXME
+
+        // Apaga arquivo *.pre.tmp
+        strcpy(temp, argv[3]);
+        remove(strcat(temp, ".pre.tmp"));
+
+        // Apaga arquivo *.mnt.tmp
+        strcpy(temp, argv[3]);
+        remove(strcat(temp, ".mcr.tmp"));
     }
 
 
