@@ -36,16 +36,17 @@ extensão .mcr .\n\n\
 *************************************************************\n"
 
 
-#define SYMBOL_NOT_DECLARED "%d\n"
+#define SYMBOL_NOT_DECLARED "[ERRO SEMÂNTICO] Uso de símbolo indefinido na linha %d.\n"
 
 
-#define SYMBOL_REDEFINED "%d\n"
+#define SYMBOL_REDEFINED "[ERRO SEMÂNTICO] Símbolo redefinido na linha %d. \
+O valor definido anteriormente foi sobrescrito.\n"
 
 
-#define EQU_TOO_MUCH_ARGUMENTS "%d\n"
+#define EQU_TOO_MUCH_ARGUMENTS "[ERRO SINTÁTICO] Diretiva EQU com argumentos demais na linha %d. Os argumentos excedentes foram ignorados.\n"
 
 
-#define EQU_INVALID_ARGUMENT "%d\n"
+#define EQU_INVALID_ARGUMENT "[ERRO SINTÁTICO] Operando inválido para diretiva EQU na linha %d. A diretiva foi ignorada.\n"
 
 
 

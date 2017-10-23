@@ -253,13 +253,14 @@ void generate_line_tokens_list(FILE *source_file, token_t **token_list, int line
 
         last_created_node = insert_node_at_list_end(token_list, retrieved_token_id, line_count, byte_count);
 
-        define_token_type(last_created_node);
 
         // Ponteiro da linha aponta para o primeiro caracter da linha após o último caracter do token recuperado.
         line_ptr = strstr(line_ptr, retrieved_token_id) + retrieved_token_length;
 
         // A conversão só pode ser feita após o incremento de line_ptr.
         convert_string_to_all_caps(last_created_node->token_identifier);
+
+        define_token_type(last_created_node);
 
         retrieved_token_length = get_next_token(line_ptr, retrieved_token_id);
     }
@@ -396,7 +397,7 @@ token_t * insert_node_at_list_end(token_t **token_list, char *retrieved_token_id
     // Inicializa novo token
     strcpy(new_node->token_identifier, retrieved_token_id);
     new_node->type = undefined;
-    new_node->source_file_line = -1;
+    new_node->source_file_line = line_count;
     new_node->output_file_byte = -1;
     new_node->next = NULL;
 
