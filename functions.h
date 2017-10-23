@@ -78,7 +78,7 @@ int get_next_token(char *input_line, char *output_token);
 
 
 // Extrai os tokens de uma linha.
-void generate_line_tokens_list(FILE *input_file, token_t **token_list, int line_count, int byte_count);
+void generate_line_tokens_list(FILE *input_file, token_t **token_list, int *line_count, int byte_count);
 
 
 // Salva no nó o tipo do token
@@ -234,7 +234,7 @@ int get_next_token(char *input_line, char *output_token){
 
 
 // Extrai os tokens de uma linha.
-void generate_line_tokens_list(FILE *source_file, token_t **token_list, int line_count, int byte_count){
+void generate_line_tokens_list(FILE *source_file, token_t **token_list, int *line_count, int byte_count){
 
     // Linha recuperada do arquivo.
     char retrieved_line[ MAX_LINE_WIDTH + 1 ];
@@ -260,10 +260,10 @@ void generate_line_tokens_list(FILE *source_file, token_t **token_list, int line
 
     retrieved_token_length = (int) get_next_token(line_ptr, retrieved_token_id);
 
-     while ( retrieved_token_length ) {
+    while ( retrieved_token_length ) {
 
 
-        last_created_node = insert_node_at_list_end(token_list, retrieved_token_id, line_count, byte_count);
+        last_created_node = insert_node_at_list_end(token_list, retrieved_token_id, *line_count, byte_count);
 
 
         // Ponteiro da linha aponta para o primeiro caracter da linha após o último caracter do token recuperado.
@@ -275,6 +275,15 @@ void generate_line_tokens_list(FILE *source_file, token_t **token_list, int line
         define_token_type(last_created_node);
 
         retrieved_token_length = get_next_token(line_ptr, retrieved_token_id);
+    }
+
+    //TODO: Pegar nova linha caso o 1º token seja um símbolo e não tenham tokens após ele.
+
+    // Se a linha só possui um label, lê mais linhas até formar uma linha completa.
+    if ( ( (*token_list)->type == label ) && ( (*token_list)->next == NULL ) ) {
+        ++(*line_count);
+        // Chamada recursiva
+        generate_line_tokens_list(source_file, token_list, line_count, byte_count);
     }
 
 }
