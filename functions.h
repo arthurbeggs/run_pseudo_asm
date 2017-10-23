@@ -144,7 +144,8 @@ void write_line_into_output(token_t *token_list, FILE *output_ptr);
 void save_list_into_file(token_t *token_list, FILE *binary_ptr);
 
 
-
+// Troca símbolos já definidos por sua definição
+void swap_equ_defined_symbols(token_t *token_list, symbol_table_t *symbol_table);
 
 
 
@@ -264,13 +265,14 @@ void generate_line_tokens_list(FILE *source_file, token_t **token_list, int line
 
         last_created_node = insert_node_at_list_end(token_list, retrieved_token_id, line_count, byte_count);
 
-        define_token_type(last_created_node);
 
         // Ponteiro da linha aponta para o primeiro caracter da linha após o último caracter do token recuperado.
         line_ptr = strstr(line_ptr, retrieved_token_id) + retrieved_token_length;
 
         // A conversão só pode ser feita após o incremento de line_ptr.
         convert_string_to_all_caps(last_created_node->token_identifier);
+
+        define_token_type(last_created_node);
 
         retrieved_token_length = get_next_token(line_ptr, retrieved_token_id);
     }
@@ -361,6 +363,8 @@ int is_directive(char *id){
     else if ( !(strcmp(id, "IF")) )     return 1;
     else if ( !(strcmp(id, "MACRO")) )  return 1;
     else if ( !(strcmp(id, "END")) )    return 1;
+    else if ( !(strcmp(id, "TEXT")) )   return 1;
+    else if ( !(strcmp(id, "DATA")) )   return 1;
     else return 0; // Falso
 }
 
@@ -405,7 +409,7 @@ token_t * insert_node_at_list_end(token_t **token_list, char *retrieved_token_id
     // Inicializa novo token
     strcpy(new_node->token_identifier, retrieved_token_id);
     new_node->type = undefined;
-    new_node->source_file_line = -1;
+    new_node->source_file_line = line_count;
     new_node->output_file_byte = -1;
     new_node->next = NULL;
 
@@ -441,7 +445,7 @@ void erase_token_list(token_t **token_list){
 int convert_string_to_int(char *id){
     int temp;
 
-    if ( *(id+1) == 'X' ) sscanf(id, "%x", &temp);
+    if ( (*(id+1) == 'X') || (*(id+2) == 'X') ) sscanf(id, "%x", &temp);
     else sscanf(id, "%d", &temp);
 
     return temp;
@@ -524,8 +528,9 @@ void write_line_into_output(token_t *token_list, FILE *output_ptr){
     token_t *temp = token_list;
 
     while ( temp != NULL ){
-        fprintf(output_ptr, "%s ", temp->token_identifier);
-        temp = temp->next;
+        fprintf(output_ptr, "%s", temp->token_identifier);
+        if ( temp->type == label ) fprintf(output_ptr, ":");
+        if ( ( temp = temp->next ) != NULL  ) fprintf(output_ptr, " ");
     }
     fprintf(output_ptr, "\n");
 }
@@ -537,13 +542,37 @@ void save_list_into_file(token_t *token_list, FILE *binary_ptr){
 
     temp = token_list;
 
-    while ( temp->next != NULL ){
+    while ( temp != NULL ){
         fwrite(temp, sizeof(token_t), 1, binary_ptr);
         temp = temp->next;
     }
 
 }
 
+
+// Troca símbolos já definidos por sua definição
+void replace_equ_defined_symbols(token_t *token_list, symbol_table_t *symbol_table){
+    token_t *temp;
+    int value, status;
+
+    temp = token_list;
+
+    while ( temp != NULL ){
+
+        if ( temp->type == symbol ){
+            status = retrieve_symbol_from_table( \
+                        symbol_table, \
+                        temp->token_identifier, \
+                        &value);
+
+            if ( status == 1 ){
+                temp->type = number;
+                sprintf(temp->token_identifier, "%d", value);
+            }
+        }
+        temp = temp->next;
+    }
+}
 
 
 

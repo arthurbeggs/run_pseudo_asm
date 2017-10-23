@@ -18,7 +18,7 @@ void pre_processamento(char const *source_file, char const *output_file);
 
 void pre_processamento(char const *source_file, char const *output_file){
 
-    char pre_output_file[ MAX_IDENTIFIER_WIDTH + 5 ];
+    char temp_string[ MAX_IDENTIFIER_WIDTH + 5 ];
 
     token_t *token_list = NULL;
 
@@ -26,7 +26,7 @@ void pre_processamento(char const *source_file, char const *output_file){
 
     int line_count = 0, temp, status;
 
-    strcpy(pre_output_file, output_file);
+    strcpy(temp_string, output_file);
 
     FILE *source_ptr; // Arquivo de entrada - source file pointer
     FILE *output_ptr; // Arquivo de saída - output file pointer
@@ -34,9 +34,9 @@ void pre_processamento(char const *source_file, char const *output_file){
 
     source_ptr = fopen(source_file, "r"); // Abre o arquivo de entrada em modo leitura.
 
-    output_ptr = fopen(strcat(pre_output_file, ".pre"), "w"); // Cria o arquivo de saída com o nome dado pelo usuário.
+    output_ptr = fopen(strcat(temp_string, ".pre"), "w"); // Cria o arquivo de saída com o nome dado pelo usuário.
 
-    binary_ptr = fopen(strcat(pre_output_file, ".tmp"), "wb"); // Cria o arquivo intermediário com o nome dado pelo usuário.
+    binary_ptr = fopen(strcat(temp_string, ".tmp"), "wb"); // Cria o arquivo intermediário com o nome dado pelo usuário.
 
 
     if ( source_ptr == NULL ){
@@ -71,20 +71,43 @@ void pre_processamento(char const *source_file, char const *output_file){
           && ( token_list->next->type == directive ) \
           && !( strcmp(token_list->next->token_identifier, "EQU") ) \
         ) {
-            // Se o 3º token da linha não for um número, lança a mensagem de erro e passa para a leitura da próxima linha, ignorando a atual.
-            if ( token_list->next->next->type != number ) {
+            // Se o 3º token da linha não for um número ou um sinal seguido de número, lança a mensagem de erro e passa para a leitura da próxima linha, ignorando a atual.
+            if ( ( token_list->next->next->type != number ) \
+                && !( ( ( token_list->next->next->type == plus ) \
+                     || ( token_list->next->next->type == minus )  )  \
+                     && ( token_list->next->next->next->type == number ) ) \
+            ) {
                 printf( EQU_INVALID_ARGUMENT, token_list->source_file_line );
                 continue;
             }
 
-            // Se a linha possuir mais de 3 tokens, lança a mensagem de erro, ignora os tokens excedentes e continua a análise.
-            if ( token_list->next->next->next != NULL ) printf( EQU_TOO_MUCH_ARGUMENTS,  token_list->source_file_line );
+            // Se a linha possuir mais tokens que o esperado, lança a mensagem de erro, ignora os tokens excedentes e continua a análise.
+            if  (   (       ( token_list->next->next->type == number ) \
+                    &&      ( token_list->next->next->next != NULL ) \
+                    ) \
+                ||  (   (   ( token_list->next->next->type == plus ) \
+                        ||  ( token_list->next->next->type == minus ) \
+                        )\
+                    &&  (   ( token_list->next->next->next->type != number ) \
+                        ||  ( token_list->next->next->next->next != NULL ) \
+                    ) \
+                )\
+            ) {
+                printf( EQU_TOO_MUCH_ARGUMENTS, token_list->source_file_line );
+            }
+
+            strcpy(temp_string, token_list->next->next->token_identifier);
+
+            // Adiciona sinal ao valor do símbolo, caso exista
+            if ( ( token_list->next->next->type != number ) ) {
+                strcat(temp_string, token_list->next->next->next->token_identifier);
+            }
 
             // Se o símbolo já tiver sido inserido na tabela de símbolos, seu valor é substituído pelo mais recente, uma mensagem de erro é lançada para indicar a redefinição de símbolos e passa para a leitura da próxima linha.
             if ( insert_label_into_symbol_table( \
                     &symbol_table, \
                     token_list->token_identifier, \
-                    convert_string_to_int( token_list->next->next->token_identifier) ) \
+                    convert_string_to_int( temp_string ) ) \
             ) { printf( SYMBOL_REDEFINED, token_list->source_file_line ); }
             continue;
         }
@@ -102,7 +125,7 @@ void pre_processamento(char const *source_file, char const *output_file){
                         &temp);
 
             // Se o símbolo não existir na tabela, lança mensagem de erro e apaga a linha atual e a próxima.
-            if ( status == -1 ) {     // Símbolo não definido
+            if ( status == 0 ) {     // Símbolo não definido
                 printf( SYMBOL_NOT_DECLARED, token_list->source_file_line );
 
                 // Linha atual e a próxima são apagadas
@@ -125,6 +148,7 @@ void pre_processamento(char const *source_file, char const *output_file){
 
         // Escreve a linha atual no arquivo .pre, salva a lista de tokens no arquivo binário.
         else {
+            replace_equ_defined_symbols(token_list, symbol_table);
             write_line_into_output(token_list, output_ptr);
             save_list_into_file(token_list, binary_ptr);
         }
