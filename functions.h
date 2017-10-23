@@ -349,6 +349,8 @@ int is_directive(char *id){
     else if ( !(strcmp(id, "IF")) )     return 1;
     else if ( !(strcmp(id, "MACRO")) )  return 1;
     else if ( !(strcmp(id, "END")) )    return 1;
+    else if ( !(strcmp(id, "TEXT")) )   return 1;
+    else if ( !(strcmp(id, "DATA")) )   return 1;
     else return 0; // Falso
 }
 
@@ -429,7 +431,7 @@ void erase_token_list(token_t **token_list){
 int convert_string_to_int(char *id){
     int temp;
 
-    if ( *(id+1) == 'X' ) sscanf(id, "%x", &temp);
+    if ( (*(id+1) == 'X') || (*(id+2) == 'X') ) sscanf(id, "%x", &temp);
     else sscanf(id, "%d", &temp);
 
     return temp;
@@ -512,8 +514,9 @@ void write_line_into_output(token_t *token_list, FILE *output_ptr){
     token_t *temp = token_list;
 
     while ( temp != NULL ){
-        fprintf(output_ptr, "%s ", temp->token_identifier);
-        temp = temp->next;
+        fprintf(output_ptr, "%s", temp->token_identifier);
+        if ( temp->type == label ) fprintf(output_ptr, ":");
+        if ( ( temp = temp->next ) != NULL  ) fprintf(output_ptr, " ");
     }
     fprintf(output_ptr, "\n");
 }
