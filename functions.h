@@ -66,7 +66,7 @@ int get_next_token(char *input_line, char *output_token);
 
 
 // Extrai os tokens de uma linha.
-void generate_line_tokens_list(FILE *input_file, token_t *token_list, int line_count, int byte_count);
+void generate_line_tokens_list(FILE *input_file, token_t **token_list, int line_count, int byte_count);
 
 
 // Salva no nó o tipo do token
@@ -171,7 +171,9 @@ void read_file_line(FILE *source_file, char *output_string){
 
     // fscanf(source_file, " %500[^;\r\n]%*[^\r\n]%*[\r\n]", output_string);
     // fscanf(source_file, " %[^;\r\n]%*[^\r\n]%*[\r\n]", output_string);
-    fscanf(source_file, " %[^;\r\n]%*[\r\n]", output_string);
+    fscanf(source_file, " %500[^;\r\n]", output_string);
+    fscanf(source_file, "%*[^\r\n]");
+    fscanf(source_file, "%*[\r\n]");
 }
 
 
@@ -186,7 +188,7 @@ int get_next_token(char *input_line, char *output_token){
     // %*[ \t] ignora espaços e tabs que antecedem o token;
     // %[^ \t] lê o restante da linha (máximo de 100 caracteres), para ao encontrar a primeira ocorrência de um espaço ou tab e salva a string lida em output_token (não separa tokens ",", "+" e "-" quando emendados a outros tokens);
     //NOTE: Se o tamanho da macro MAX_IDENTIFIER_WIDTH for alterado (!= 500), é necessário alterar o tamanho máximo do 2º parâmetro do scanset.
-    sscanf(input_line, "%100[^ \t]", output_token);
+    sscanf(input_line, " %100[^\t ]", output_token);
 
     // Testa se o token possui uma vírgula e a separa caso precise
     if ( ( temp = strstr(output_token, ",") ) ){
@@ -213,13 +215,13 @@ int get_next_token(char *input_line, char *output_token){
     }
 
     // Retorna a quantidade de caracteres de output_token
-    if ( output_token ) return ( strlen(output_token) );
+    if ( *output_token != '\0' ) return ( strlen(output_token) );
     else return 0;
 }
 
 
 // Extrai os tokens de uma linha.
-void generate_line_tokens_list(FILE *source_file, token_t *token_list, int line_count, int byte_count){
+void generate_line_tokens_list(FILE *source_file, token_t **token_list, int line_count, int byte_count){
 
     // Linha recuperada do arquivo.
     char retrieved_line[ MAX_LINE_WIDTH + 1 ];
@@ -247,14 +249,16 @@ void generate_line_tokens_list(FILE *source_file, token_t *token_list, int line_
 
      while ( retrieved_token_length ) {
 
-        convert_string_to_all_caps(retrieved_token_id);
 
-        last_created_node = insert_node_at_list_end(&token_list, retrieved_token_id, line_count, byte_count);
+        last_created_node = insert_node_at_list_end(token_list, retrieved_token_id, line_count, byte_count);
 
         define_token_type(last_created_node);
 
         // Ponteiro da linha aponta para o primeiro caracter da linha após o último caracter do token recuperado.
         line_ptr = strstr(line_ptr, retrieved_token_id) + retrieved_token_length;
+
+        // A conversão só pode ser feita após o incremento de line_ptr.
+        convert_string_to_all_caps(last_created_node->token_identifier);
 
         retrieved_token_length = get_next_token(line_ptr, retrieved_token_id);
     }
@@ -271,7 +275,7 @@ void define_token_type(token_t *node){
         && ( temp != NULL ) \
     ){
         // Se o ":" não for o último caracter do identificador, define o tipo como "invalid".
-        if ( (temp+1) != '\0' ) node->type = invalid;
+        if ( *(temp+1) != '\0' ) node->type = invalid;
 
         else{
             // Remove o ":" do final do token
@@ -298,15 +302,21 @@ void define_token_type(token_t *node){
 // Testa se o token é um símbolo
 int is_symbol(char *id){
     char temp[ MAX_IDENTIFIER_WIDTH ];
+    char garbage_start, garbage_end;
+
+    garbage_start = garbage_end = '\0';
 
     // Scanset definido:
     // %*[0-9]: ignora números no início da string;
     // %[_A-Z0-9]: lê o restante da string e para de ler se encontrar um caracter inválido;
     // %*s: ignora o restante da linha, caso existir.
-    sscanf(id, "%*[0-9]%[_A-Z0-9]%*s", temp);
+    // sscanf(id, "%1[0-9]%[A-Z0-9_]%c", &garbage_start, temp, &garbage_end);
+    sscanf(id, "%1[0-9]", &garbage_start);
+    sscanf(id, "%1[^A-Z0-9_]", &garbage_end);
+    sscanf(id, "%[A-Z0-9_]", temp);
 
     // Se temp == id, retorna 1. Senão, retorna 0.
-    if ( !(strcmp(id, temp)) ) return 1;
+    if ( (garbage_start == '\0') && (garbage_end == '\0') ) return 1;
     else return 0;  // Falso
 }
 
@@ -381,19 +391,19 @@ token_t * insert_node_at_list_end(token_t **token_list, char *retrieved_token_id
     token_t *new_node = (token_t*) malloc(sizeof(token_t));
 
     // Inicializa novo token
-    strcpy(new_node->token_identifier, "");
+    strcpy(new_node->token_identifier, retrieved_token_id);
     new_node->type = undefined;
     new_node->source_file_line = -1;
     new_node->output_file_byte = -1;
     new_node->next = NULL;
 
-    if (!*token_list) {
+    if ( *token_list == NULL ) {
         *token_list = new_node;
         new_node->prev = NULL;
     }
     else {
         temp = *token_list;
-        while ( temp->next ) temp = temp->next;
+        while ( temp->next != NULL ) temp = temp->next;
         temp->next = new_node;
         new_node->prev = temp;
     }
@@ -487,9 +497,9 @@ int retrieve_symbol_from_table(symbol_table_t *symbol_table, char *id, int *valu
 
 // Escreve linha no arquivo de saída.
 void write_line_into_output(token_t *token_list, FILE *output_ptr){
-    token_t *temp;
+    token_t *temp = token_list;
 
-    while ( temp->next != NULL ){
+    while ( temp != NULL ){
         fprintf(output_ptr, "%s ", temp->token_identifier);
         temp = temp->next;
     }

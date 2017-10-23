@@ -61,7 +61,7 @@ void pre_processamento(char const *source_file, char const *output_file){
         erase_token_list(token_list);
 
         // Lê uma nova linha do arquivo e a separa em uma lista de tokens
-        generate_line_tokens_list(source_ptr, token_list, line_count, -1);
+        generate_line_tokens_list(source_ptr, &token_list, line_count, -1);
 
         // Se a linha estiver vazia, lê a próxima linha.
         if ( token_list == NULL ) continue;
@@ -108,7 +108,7 @@ void pre_processamento(char const *source_file, char const *output_file){
                 // Linha atual e a próxima são apagadas
                 erase_token_list(token_list);
                 ++line_count;
-                generate_line_tokens_list(source_ptr, token_list, line_count, -1);
+                generate_line_tokens_list(source_ptr, &token_list, line_count, -1);
                 // Lista será apagada e line_count incrementado novamente na próxima iteração.
             }
 
@@ -117,7 +117,7 @@ void pre_processamento(char const *source_file, char const *output_file){
                 // Linha atual e a próxima são apagadas
                 erase_token_list(token_list);
                 ++line_count;
-                generate_line_tokens_list(source_ptr, token_list, line_count, -1);
+                generate_line_tokens_list(source_ptr, &token_list, line_count, -1);
                 // Lista será apagada e line_count incrementado novamente na próxima iteração.
             }
             // A linha será gravada no arquivo na próxima iteração.
