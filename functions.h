@@ -177,16 +177,15 @@ int valid_command(int count, char const *arguments[]){
 void read_file_line(FILE *source_file, char *output_string){
     // Comportamento do scanset definido:
     // " " ignora espaços e tabs no início da linha;
-    // %[^;\r\n] lê o restante da linha (máximo de 500 caracteres), para ao encontrar a primeira ocorrência de um comentário (;) ou um carriage return(\r) ou um line feed (\n) e salva a string lida em output_string;
-    // %*[^\r\n] lê o restante da linha (comentário ou nada), para ao encontrar a primeira ocorrência de um carriage return(\r) ou um line feed (\n) e descarta a string lida;
-    // %*[\r\n] lê o identificador de final de linha e o descarta. Funciona para identificador LF, CR e CRLF;
+    // %[^;\n] lê o restante da linha (máximo de 500 caracteres), para ao encontrar a primeira ocorrência de um comentário (;) ou um line feed (\n) e salva a string lida em output_string;
+    // %*[^\n] lê o restante da linha (comentário ou nada), para ao encontrar a primeira ocorrência de um carriage return(\r) ou um line feed (\n) e descarta a string lida;
+    // %*[\n] lê o identificador de final de linha e o descarta. Funciona para identificador LF;
     //NOTE: Se o tamanho da macro MAX_LINE_WIDTH for alterado (!= 500), é necessário alterar o tamanho máximo do 2º parâmetro do scanset.
 
-    // fscanf(source_file, " %500[^;\r\n]%*[^\r\n]%*[\r\n]", output_string);
-    // fscanf(source_file, " %[^;\r\n]%*[^\r\n]%*[\r\n]", output_string);
-    fscanf(source_file, " %500[^;\r\n]", output_string);
-    fscanf(source_file, "%*[^\r\n]");
-    fscanf(source_file, "%*[\r\n]");
+    fscanf(source_file, "%*[\t ]");
+    fscanf(source_file, "%500[^;\n]", output_string);
+    fscanf(source_file, "%*[^\n]");
+    fscanf(source_file, "%*1[\n]");
 }
 
 
@@ -280,7 +279,7 @@ void generate_line_tokens_list(FILE *source_file, token_t **token_list, int *lin
     //TODO: Pegar nova linha caso o 1º token seja um símbolo e não tenham tokens após ele.
 
     // Se a linha só possui um label, lê mais linhas até formar uma linha completa.
-    if ( ( (*token_list)->type == label ) && ( (*token_list)->next == NULL ) ) {
+    if ( ( ( (*token_list) != NULL ) && (*token_list)->type == label ) && ( (*token_list)->next == NULL ) ) {
         ++(*line_count);
         // Chamada recursiva
         generate_line_tokens_list(source_file, token_list, line_count, byte_count);

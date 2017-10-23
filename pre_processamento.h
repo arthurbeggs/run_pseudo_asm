@@ -77,7 +77,7 @@ void pre_processamento(char const *source_file, char const *output_file){
                      || ( token_list->next->next->type == minus )  )  \
                      && ( token_list->next->next->next->type == number ) ) \
             ) {
-                printf( EQU_INVALID_ARGUMENT, token_list->source_file_line );
+                printf( EQU_INVALID_ARGUMENT, token_list->next->source_file_line );
                 continue;
             }
 
@@ -93,7 +93,7 @@ void pre_processamento(char const *source_file, char const *output_file){
                     ) \
                 )\
             ) {
-                printf( EQU_TOO_MUCH_ARGUMENTS, token_list->source_file_line );
+                printf( EQU_TOO_MUCH_ARGUMENTS, token_list->next->source_file_line );
             }
 
             strcpy(temp_string, token_list->next->next->token_identifier);
