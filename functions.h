@@ -40,11 +40,11 @@ typedef struct token_t{
 }token_t;
 
 
-typedef struct table_t{
+typedef struct symbol_table_t{
     char symbol[ MAX_IDENTIFIER_WIDTH +1 ];
     int  value;
-    struct table_t *next;
-}table_t;
+    struct symbol_table_t *next;
+}symbol_table_t;
 
 
 
@@ -106,6 +106,34 @@ token_t * insert_node_at_list_end(token_t **token_list, char *retrieved_token_id
 void erase_token_list(token_t *token_list);
 
 
+// Converte string para inteiro.
+int convert_string_to_int(char *id);
+
+
+// Insere novo nó na tabela. Se o símbolo já existir, sobrescreve seu valor
+// Retorna 0 em caso de sucesso e 1 se o símbolo já existir na tabela.
+int insert_label_into_symbol_table(symbol_table_t **symbol_table, char *id, int value);
+
+
+// Desaloca tabela de símbolos
+void erase_symbol_table(symbol_table_t *symbol_table);
+
+
+// Procura símbolo na tabela.
+// Retorna 0 caso o símbolo não tenha sido declarado. Senão, retorna 1.
+int retrieve_symbol_from_table(symbol_table_t *symbol_table, char *id, int *value);
+
+
+// Escreve linha no arquivo de saída.
+void write_line_into_output(token_t *token_list, FILE *output_ptr);
+
+
+// Salva lista em um arquivo binário
+void save_list_into_file(token_t *token_list, FILE *binary_ptr);
+
+
+
+
 
 
 
@@ -135,13 +163,15 @@ int valid_command(int count, char const *arguments[]){
 // Retorna caso o arquivo tenha terminado.
 void read_file_line(FILE *source_file, char *output_string){
     // Comportamento do scanset definido:
-    // %*[ \t] ignora espaços e tabs no início da linha;
+    // " " ignora espaços e tabs no início da linha;
     // %[^;\r\n] lê o restante da linha (máximo de 500 caracteres), para ao encontrar a primeira ocorrência de um comentário (;) ou um carriage return(\r) ou um line feed (\n) e salva a string lida em output_string;
     // %*[^\r\n] lê o restante da linha (comentário ou nada), para ao encontrar a primeira ocorrência de um carriage return(\r) ou um line feed (\n) e descarta a string lida;
     // %*[\r\n] lê o identificador de final de linha e o descarta. Funciona para identificador LF, CR e CRLF;
     //NOTE: Se o tamanho da macro MAX_LINE_WIDTH for alterado (!= 500), é necessário alterar o tamanho máximo do 2º parâmetro do scanset.
 
-    fscanf(source_file, "%*[ \t]%500[^;\r\n]%*[^\r\n]%*[\r\n]",  output_string);
+    // fscanf(source_file, " %500[^;\r\n]%*[^\r\n]%*[\r\n]", output_string);
+    // fscanf(source_file, " %[^;\r\n]%*[^\r\n]%*[\r\n]", output_string);
+    fscanf(source_file, " %[^;\r\n]%*[\r\n]", output_string);
 }
 
 
@@ -150,11 +180,13 @@ void read_file_line(FILE *source_file, char *output_string){
 int get_next_token(char *input_line, char *output_token){
     char *temp;
 
+    *output_token = '\0';
+
     // Comportamento do scanset definido:
     // %*[ \t] ignora espaços e tabs que antecedem o token;
     // %[^ \t] lê o restante da linha (máximo de 100 caracteres), para ao encontrar a primeira ocorrência de um espaço ou tab e salva a string lida em output_token (não separa tokens ",", "+" e "-" quando emendados a outros tokens);
     //NOTE: Se o tamanho da macro MAX_IDENTIFIER_WIDTH for alterado (!= 500), é necessário alterar o tamanho máximo do 2º parâmetro do scanset.
-    sscanf(input_line, "%*[ \t]%100[^ \t]", output_token);
+    sscanf(input_line, "%100[^ \t]", output_token);
 
     // Testa se o token possui uma vírgula e a separa caso precise
     if ( ( temp = strstr(output_token, ",") ) ){
@@ -181,7 +213,8 @@ int get_next_token(char *input_line, char *output_token){
     }
 
     // Retorna a quantidade de caracteres de output_token
-    return ( strlen(output_token) );
+    if ( output_token ) return ( strlen(output_token) );
+    else return 0;
 }
 
 
@@ -201,13 +234,16 @@ void generate_line_tokens_list(FILE *source_file, token_t *token_list, int line_
     // Ponteiro para o último nó criado da lista de tokens.
     token_t *last_created_node;
 
+    retrieved_token_length = 0;
     line_ptr = retrieved_line;
     last_created_node = NULL;
+    *(retrieved_line) = '\0';
+    *(retrieved_token_id) = '\0';
 
 
     read_file_line(source_file, retrieved_line);
 
-    retrieved_token_length = get_next_token(line_ptr, retrieved_token_id);
+    retrieved_token_length = (int) get_next_token(line_ptr, retrieved_token_id);
 
      while ( retrieved_token_length ) {
 
@@ -376,6 +412,107 @@ void erase_token_list(token_t *token_list){
         free(temp);
     }
 }
+
+
+// Converte string para inteiro.
+int convert_string_to_int(char *id){
+    int temp;
+
+    if ( *(id+1) == 'X' ) sscanf(id, "%x", &temp);
+    else sscanf(id, "%d", &temp);
+
+    return temp;
+}
+
+
+// Insere novo nó na tabela. Se o símbolo já existir, sobrescreve seu valor
+// Retorna 0 em caso de sucesso e 1 se o símbolo já existir na tabela.
+int insert_label_into_symbol_table(symbol_table_t **symbol_table, char *id, int value){
+
+    symbol_table_t *temp;
+
+    temp = *symbol_table;
+
+    // Procura se o símbolo já foi definido anteriormente.
+    while ( temp ){
+        if ( !( strcmp( temp->symbol, id ) ) ){
+            strcpy(temp->symbol, id);
+            return 1;
+        }
+        temp = temp->next;
+    }
+
+    // Insere novo símbolo na tabela.
+    temp->next = (symbol_table_t*) malloc(sizeof(symbol_table_t));
+    strcpy(temp->next->symbol, id);
+    temp->next->value = value;
+
+    return 0;
+}
+
+
+// Desaloca tabela de símbolos
+void erase_symbol_table(symbol_table_t *symbol_table){
+    symbol_table_t *temp;
+
+    while ( symbol_table ){
+        temp = symbol_table;
+        symbol_table = symbol_table->next;
+        free(temp);
+    }
+}
+
+
+// Procura símbolo na tabela.
+// Retorna 0 caso o símbolo não tenha sido declarado. Senão, retorna 1.
+int retrieve_symbol_from_table(symbol_table_t *symbol_table, char *id, int *value){
+
+    symbol_table_t *temp;
+
+    temp = symbol_table;
+
+    // Procura se o símbolo já foi definido anteriormente.
+    while ( temp ){
+        if ( !( strcmp( temp->symbol, id ) ) ){
+            *value = temp->value;
+            return 1;
+        }
+        temp = temp->next;
+    }
+
+    // Retorna 0 caso o símbolo não exista na tabela.
+    return 0;
+}
+
+
+// Escreve linha no arquivo de saída.
+void write_line_into_output(token_t *token_list, FILE *output_ptr){
+    token_t *temp;
+
+    while ( temp->next != NULL ){
+        fprintf(output_ptr, "%s ", temp->token_identifier);
+        temp = temp->next;
+    }
+    fprintf(output_ptr, "\n");
+}
+
+
+// Salva lista em um arquivo binário
+void save_list_into_file(token_t *token_list, FILE *binary_ptr){
+    token_t *temp;
+
+    temp = token_list;
+
+    while ( temp->next != NULL ){
+        fwrite(temp, sizeof(token_t), 1, binary_ptr);
+        temp = temp->next;
+    }
+
+}
+
+
+
+
 
 
 
