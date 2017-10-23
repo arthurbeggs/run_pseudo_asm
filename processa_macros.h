@@ -32,53 +32,59 @@ void processa_macros(char const *output_file){
 
     token_t *token_list = NULL;
 
-    int line_count = 0;
+    FILE *source_ptr; // Ponteiro do arquivo de saída do pré processamento
+    FILE *binary_ptr; // Ponteiro para o arquivo intermediário.
+    FILE *output_ptr; // Ponteiro do arquivo de saída do processamento da macro
+
 
     strcpy(macro_output_file, output_file);
+    source_ptr = fopen(strcat(macro_output_file, ".pre.tmp"), "rb"); // Abre o arquivo de entrada em modo leitura binária.
 
-    FILE *binary_ptr; // Arquivo de saída do pré processamento - output file pointer
-    FILE *macro_processada_ptr; // Ponteiro do arquivo de saída do processamento da macro
+    if ( source_ptr == NULL ){
+        printf("\n Houve um erro ao abrir o arquivo %s !\n", macro_output_file);
+        exit(1);
+    }
 
-    binary_ptr = fopen(strcat(macro_output_file, ".pre.tmp"), "r"); // Abre o arquivo de entrada em modo leitura.
 
-    macro_processada_ptr = fopen(strcat(macro_output_file, ".mcr"), "w"); // Cria o arquivo de saída com o nome dado pelo usuário.
+    strcpy(macro_output_file, output_file);
+    output_ptr = fopen(strcat(macro_output_file, ".mcr"), "w"); // Cria o arquivo de saída com o nome dado pelo usuário.
+
+    if ( output_ptr == NULL ){
+        printf("\n Houve um erro ao criar o arquivo %s !\n", macro_output_file);
+        exit(1);
+    }
+
+
+    binary_ptr = fopen(strcat(macro_output_file, ".tmp"), "wb"); // Cria o arquivo intermediário com o nome dado pelo usuário.
 
     if ( binary_ptr == NULL ){
-        printf("\n Houve um erro ao abrir o arquivo %s temporário!\n", (strcat(macro_output_file, ".pre.tmp")));
+        printf("\n Houve um erro ao criar o arquivo temporário! \n");
         exit(1);
     }
 
-    if ( macro_processada_ptr == NULL ){
-        printf("\n Houve um erro ao criar o arquivo %s !\n", (strcat(macro_output_file, ".mrc")));
-        exit(1);
-    }
+    while ( !( feof(source_ptr) ) ) {
 
-    while ( !(feof(binary_ptr) ) ) {
-
-        ++line_count;
-
-        // Apaga os nós já existentes da lista de tokens.
         erase_token_list(&token_list);
 
-        //lê uma linha do arquivo binario e transforma em lista;
-        // convert_line_binary_file_to_list(); //TODO;
-
-        if ( ( token_list->type == label ) \
-          && ( token_list->next->type == directive ) \
-          && !( strcmp(token_list->next->token_identifier, "MACRO") ) \
-        ) {
-            //guarda label e linha da macro na mnt se ainda nao estiver. Caso esteja, mostra mensagem de erro.
-            // if
-
-            //Lê nova linha
-
-        }
+        retrieve_token_list_from_file(&token_list, source_ptr);
 
 
 
-        // fclose (output_ptr);
-        fclose (macro_processada_ptr);
+
+
+
+
+
+
+        if ( feof(source_ptr) ) break;
+        // Escreve a lista no arquivo .mcr e salva a lista de tokens no arquivo binário.
+        write_line_into_output(token_list, output_ptr);
+        save_list_into_file(token_list, binary_ptr);
     }
+
+    fclose (source_ptr);
+    fclose (output_ptr);
+    fclose (binary_ptr);
 
 }
 

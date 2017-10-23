@@ -148,6 +148,8 @@ void save_list_into_file(token_t *token_list, FILE *binary_ptr);
 void swap_equ_defined_symbols(token_t *token_list, symbol_table_t *symbol_table);
 
 
+// Recupera lista de tokens de uma linha
+void retrieve_token_list_from_file(token_t **token_list, FILE *binary_ptr);
 
 
 // Implementações
@@ -275,8 +277,6 @@ void generate_line_tokens_list(FILE *source_file, token_t **token_list, int *lin
 
         retrieved_token_length = get_next_token(line_ptr, retrieved_token_id);
     }
-
-    //TODO: Pegar nova linha caso o 1º token seja um símbolo e não tenham tokens após ele.
 
     // Se a linha só possui um label, lê mais linhas até formar uma linha completa.
     if ( ( ( (*token_list) != NULL ) && (*token_list)->type == label ) && ( (*token_list)->next == NULL ) ) {
@@ -581,6 +581,44 @@ void replace_equ_defined_symbols(token_t *token_list, symbol_table_t *symbol_tab
         temp = temp->next;
     }
 }
+
+
+// Recupera lista de tokens de uma linha
+void retrieve_token_list_from_file(token_t **token_list, FILE *binary_ptr){
+
+    token_t *temp = *token_list;
+    token_t *new_node = (token_t*) malloc(sizeof(token_t));
+
+    fread(new_node, sizeof(token_t), 1, binary_ptr);
+
+
+    while ( new_node != NULL ) {
+        // Adiciona nó lido na lista.
+        if ( *token_list == NULL ) {
+            *token_list = new_node;
+            new_node->prev = NULL;
+            new_node->next = NULL;
+        }
+        else {
+            temp = *token_list;
+            while ( temp->next != NULL ) temp = temp->next;
+            temp->next = new_node;
+            new_node->prev = temp;
+
+            // new_node->next ainda possui seu valor antigo e serve de indicador para parar a leitura do arquivo.
+            if ( new_node->next == NULL ) break;
+
+            // Sobrescreve ponteiro inválido
+            new_node->next = NULL;
+        }
+
+        new_node = (token_t*) malloc(sizeof(token_t));
+        fread(new_node, sizeof(token_t), 1, binary_ptr);
+    }
+
+}
+
+
 
 
 
