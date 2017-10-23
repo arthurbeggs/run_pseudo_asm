@@ -58,7 +58,7 @@ void pre_processamento(char const *source_file, char const *output_file){
         ++line_count;
 
         // Apaga os nós já existentes da lista de tokens.
-        erase_token_list(token_list);
+        erase_token_list(&token_list);
 
         // Lê uma nova linha do arquivo e a separa em uma lista de tokens
         generate_line_tokens_list(source_ptr, &token_list, line_count, -1);
@@ -106,16 +106,16 @@ void pre_processamento(char const *source_file, char const *output_file){
                 printf( SYMBOL_NOT_DECLARED, token_list->source_file_line );
 
                 // Linha atual e a próxima são apagadas
-                erase_token_list(token_list);
+                erase_token_list(&token_list);
                 ++line_count;
                 generate_line_tokens_list(source_ptr, &token_list, line_count, -1);
                 // Lista será apagada e line_count incrementado novamente na próxima iteração.
             }
 
             // Se o EQU apontado pelo símbolo for 0, apaga a linha seguinte.
-            else if ( status == 0 ) {
+            else if ( temp < 1 ) {     //Símbolo == 0
                 // Linha atual e a próxima são apagadas
-                erase_token_list(token_list);
+                erase_token_list(&token_list);
                 ++line_count;
                 generate_line_tokens_list(source_ptr, &token_list, line_count, -1);
                 // Lista será apagada e line_count incrementado novamente na próxima iteração.

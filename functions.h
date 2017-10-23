@@ -103,7 +103,7 @@ token_t * insert_node_at_list_end(token_t **token_list, char *retrieved_token_id
 
 
 // Desaloca lista
-void erase_token_list(token_t *token_list);
+void erase_token_list(token_t **token_list);
 
 
 // Converte string para inteiro.
@@ -312,8 +312,8 @@ int is_symbol(char *id){
     // %*s: ignora o restante da linha, caso existir.
     // sscanf(id, "%1[0-9]%[A-Z0-9_]%c", &garbage_start, temp, &garbage_end);
     sscanf(id, "%1[0-9]", &garbage_start);
-    sscanf(id, "%1[^A-Z0-9_]", &garbage_end);
-    sscanf(id, "%[A-Z0-9_]", temp);
+    sscanf(id, "%1[^A-Za-z0-9_]", &garbage_end);
+    sscanf(id, "%[A-Za-z0-9_]", temp);
 
     // Se temp == id, retorna 1. Senão, retorna 0.
     if ( (garbage_start == '\0') && (garbage_end == '\0') ) return 1;
@@ -323,12 +323,12 @@ int is_symbol(char *id){
 
 // Testa se o token é um número
 int is_number(char *id){
-    char temp[1];
+    int temp;
 
     // Se o retorno de sscanf for diferente de zero, significa que a string lida não é um número.
     if ( ( id == strstr(id, "0X") ) \
-        && !( sscanf(id+2, "%*[A-F0-9]%c", temp) ) ) return 1;
-    else if ( !( sscanf(id, "%*[0-9]%c", temp) ) )   return 1;
+        && ( sscanf(id, "%X", &temp) ) ) return 1;
+    else if ( ( sscanf(id, "%d", &temp) ) )   return 1;
     else return 0; // Falso
 }
 
@@ -387,7 +387,7 @@ void convert_string_to_all_caps(char *id){
 // Retorna um ponteiro para o elemento recém-adicionado;
 token_t * insert_node_at_list_end(token_t **token_list, char *retrieved_token_id, int line_count, int byte_count){
 
-    token_t *temp;
+    token_t *temp = NULL;
     token_t *new_node = (token_t*) malloc(sizeof(token_t));
 
     // Inicializa novo token
@@ -413,14 +413,15 @@ token_t * insert_node_at_list_end(token_t **token_list, char *retrieved_token_id
 
 
 // Desaloca lista
-void erase_token_list(token_t *token_list){
-    token_t *temp;
+void erase_token_list(token_t **token_list){
+    token_t *temp = NULL;
 
-    while ( token_list ){
-        temp = token_list;
-        token_list = token_list->next;
-        free(temp);
+    while ( *token_list != NULL ){
+        temp = (*token_list)->next;
+        free(*token_list);
+        *token_list = temp;
     }
+    token_list = NULL;
 }
 
 
@@ -439,23 +440,34 @@ int convert_string_to_int(char *id){
 // Retorna 0 em caso de sucesso e 1 se o símbolo já existir na tabela.
 int insert_label_into_symbol_table(symbol_table_t **symbol_table, char *id, int value){
 
-    symbol_table_t *temp;
+    symbol_table_t *temp, *hold;
+    symbol_table_t *new_node = (symbol_table_t*) malloc(sizeof(symbol_table_t));
+
+    strcpy(new_node->symbol, id);
+    new_node->value = value;
+    new_node->next  = NULL;
 
     temp = *symbol_table;
 
+    if ( temp == NULL ){
+        // Insere novo símbolo na tabela.
+        *symbol_table = new_node;
+
+        return 0;
+    }
+
     // Procura se o símbolo já foi definido anteriormente.
-    while ( temp ){
+    while ( temp != NULL ){
         if ( !( strcmp( temp->symbol, id ) ) ){
             strcpy(temp->symbol, id);
             return 1;
         }
+        hold = temp;
         temp = temp->next;
     }
 
     // Insere novo símbolo na tabela.
-    temp->next = (symbol_table_t*) malloc(sizeof(symbol_table_t));
-    strcpy(temp->next->symbol, id);
-    temp->next->value = value;
+    hold->next = new_node;
 
     return 0;
 }
