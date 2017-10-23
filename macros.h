@@ -23,7 +23,7 @@ void processa_macros(char const *output_file){
 
     //Passos dessa função:
     // 1 - Abre arquvo binario de saída do pre_processamento
-    // 2 - Reorganiza o arquivo em lista
+    // 2 - Reorganiza o arquivo em lista (function)
     // 3 - Verifica se é Section Text, se não for, escreve direto\\
      no arquivo de saída. Se for, trata macros.
     // 4 - Na section text: Verifica se é macro ou não. Se for, guarda o nome na \\
@@ -58,13 +58,25 @@ void processa_macros(char const *output_file){
     }
 
 while !(feof(binary_ptr) ){
-    convert_binary_file_to_list(); //TODO;
 
-    // if ( ( token_list->type == directive ) \
-    //   && ( token_list->next->type == directive ) \
-    //   && !( strcmp(token_list->next->token_identifier, "MACRO") ) \
-    // ){
-    //
+    ++line_count;
+
+    // Apaga os nós já existentes da lista de tokens.
+    erase_token_list(&token_list);
+
+    //lê uma linha do arquivo binario e transforma em lista;
+    convert_line_binary_file_to_list(); //TODO;
+
+    if ( ( token_list->type == label ) \
+      && ( token_list->next->type == directive ) \
+      && !( strcmp(token_list->next->token_identifier, "MACRO") ) \
+    ) {
+        //guarda label e linha da macro na mnt se ainda nao estiver. Caso esteja, mostra mensagem de erro.
+        if
+
+        //Lê nova linha
+
+
     // if (x == section text)
     //     SECTION_TEXT_FLAG = 1;
 

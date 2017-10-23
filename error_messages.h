@@ -36,6 +36,19 @@ extensão .mcr .\n\n\
 *************************************************************\n"
 
 
+#define SYMBOL_NOT_DECLARED "%d\n"
+
+
+#define SYMBOL_REDEFINED "%d\n"
+
+
+#define EQU_TOO_MUCH_ARGUMENTS "%d\n"
+
+
+#define EQU_INVALID_ARGUMENT "%d\n"
+
+
+
 
 
 
