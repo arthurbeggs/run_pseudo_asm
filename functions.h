@@ -132,7 +132,8 @@ void write_line_into_output(token_t *token_list, FILE *output_ptr);
 void save_list_into_file(token_t *token_list, FILE *binary_ptr);
 
 
-
+// Troca símbolos já definidos por sua definição
+void swap_equ_defined_symbols(token_t *token_list, symbol_table_t *symbol_table);
 
 
 
@@ -528,13 +529,37 @@ void save_list_into_file(token_t *token_list, FILE *binary_ptr){
 
     temp = token_list;
 
-    while ( temp->next != NULL ){
+    while ( temp != NULL ){
         fwrite(temp, sizeof(token_t), 1, binary_ptr);
         temp = temp->next;
     }
 
 }
 
+
+// Troca símbolos já definidos por sua definição
+void replace_equ_defined_symbols(token_t *token_list, symbol_table_t *symbol_table){
+    token_t *temp;
+    int value, status;
+
+    temp = token_list;
+
+    while ( temp != NULL ){
+
+        if ( temp->type == symbol ){
+            status = retrieve_symbol_from_table( \
+                        symbol_table, \
+                        temp->token_identifier, \
+                        &value);
+
+            if ( status == 1 ){
+                temp->type = number;
+                sprintf(temp->token_identifier, "%d", value);
+            }
+        }
+        temp = temp->next;
+    }
+}
 
 
 

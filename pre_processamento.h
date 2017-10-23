@@ -125,7 +125,7 @@ void pre_processamento(char const *source_file, char const *output_file){
                         &temp);
 
             // Se o símbolo não existir na tabela, lança mensagem de erro e apaga a linha atual e a próxima.
-            if ( status == -1 ) {     // Símbolo não definido
+            if ( status == 0 ) {     // Símbolo não definido
                 printf( SYMBOL_NOT_DECLARED, token_list->source_file_line );
 
                 // Linha atual e a próxima são apagadas
@@ -148,6 +148,7 @@ void pre_processamento(char const *source_file, char const *output_file){
 
         // Escreve a linha atual no arquivo .pre, salva a lista de tokens no arquivo binário.
         else {
+            replace_equ_defined_symbols(token_list, symbol_table);
             write_line_into_output(token_list, output_ptr);
             save_list_into_file(token_list, binary_ptr);
         }
