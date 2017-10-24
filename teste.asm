@@ -1,13 +1,21 @@
-  l1: EQU -0x2 ;comment
-  L2: EQU 0
+  l1: EQU 1 ;comment
+  L2: EQU 1
   l3:
 
   EQU 0x1
 SECTION text
+SUB O
+TROCA: MACRO
+COPY A, TEMP
+COPY B, TEMP
+END
+
 IF L1
 LOAD N ;lolol
 IF L2
 INPUT N
+TROCA
+ADD O
 if L3
 OUTPUT N
 

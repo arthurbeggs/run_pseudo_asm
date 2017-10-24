@@ -68,6 +68,7 @@ void pre_processamento(char const *source_file, char const *output_file){
 
         // Testa se a linha tem uma diretiva EQU na posição esperada (2º token, antecedido de um label).
         if ( ( token_list->type == label ) \
+          && ( token_list->next != NULL ) \
           && ( token_list->next->type == directive ) \
           && !( strcmp(token_list->next->token_identifier, "EQU") ) \
         ) {
@@ -114,6 +115,7 @@ void pre_processamento(char const *source_file, char const *output_file){
 
         // Testa se a linha tem uma diretiva IF na posição esperada (1º token, sucedido de um símbolo).
         else if ( ( token_list->type == directive ) \
+             && ( token_list->next != NULL ) \
              && ( token_list->next->type == symbol ) \
              && !( strcmp(token_list->token_identifier, "IF") ) \
         ){
