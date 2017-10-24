@@ -55,19 +55,19 @@ O valor definido anteriormente foi sobrescrito.\n"
 #define JUMP_ROTULO_INEXISTENTE "[ERRO SEMÂNTICO] Pulo para rótulo inexistente na linha %d.\n"// pulo para rótulos inexistente;
 
 
-#define JUMP_ROTULO_INVÁLIDO "[ERRO SEMÂNTICO] Pulo para rótulo inválido na linha %d.\n"// pulo para rótulos inválidos;
+#define JUMP_ROTULO_INVALIDO "[ERRO SEMÂNTICO] Pulo para rótulo inválido na linha %d.\n"// pulo para rótulos inválidos;
 
 
-#define JUMP_SEÇÃO_ERRADA "[ERRO SEMÂNTICO] Pulo para seção errada na linha %d. \n"// pulo para seção errada;
+#define JUMP_SECAO_ERRADA "[ERRO SEMÂNTICO] Pulo para seção errada na linha %d. \n"// pulo para seção errada;
 
 
-#define DIRETIVA_INVÁLIDA "[ERRO SINTÁTICO] Diretiva inválida na linha %d. \n"// diretivas inválidas;
+#define DIRETIVA_INVALIDA "[ERRO SINTÁTICO] Diretiva inválida na linha %d. \n"// diretivas inválidas;
 
 
-#define INSTRUÇÃO_INVÁLIDA "[ERRO SINTÁTICO] Instrução inválida na linha %d. \n"// instruções inválidas;
+#define INSTRUCAO_INVALIDA "[ERRO SINTÁTICO] Instrução inválida na linha %d. \n"// instruções inválidas;
 
 
-#define DIRETIVA_OU_INSTRUCAO_NA_SEÇÃO_ERRADA "[ERRO SINTÁTICO] Diretivas ou instruções na seção errada na linha %d. \n"// diretivas ou instruções na seção errada;
+#define DIRETIVA_OU_INSTRUCAO_NA_SECAO_ERRADA "[ERRO SINTÁTICO] Diretivas ou instruções na seção errada na linha %d. \n"// diretivas ou instruções na seção errada;
 
 
 #define DIV_POR_ZERO "[ERRO SEMÂNTICO] Divisão por zero na linha %d. \n"// divisão por zero (para constante);
@@ -76,10 +76,10 @@ O valor definido anteriormente foi sobrescrito.\n"
 #define QTD_OPERANDO_INVALIDO "[ERRO SINTÁTICO ] Instruções com a quantidade de operando inválida na linha %d. \n"// instruções com a quantidade de operando inválida;
 
 
-#define TOKENS_INVÁLIDOS "[ERRO LÉXICO] Tokens inválidos na linha %d. \n"// tokens inválidos;
+#define TOKENS_INVALIDOS "[ERRO LÉXICO] Tokens inválidos na linha %d. \n"// tokens inválidos;
 
 
-#define DOIS_RÓTULOS_NA_MESMA_LINHA "[ERRO SINTÁTICO] Dois rótulos na mesma linha na linha %d. \n"// dois rótulos na mesma linha;
+#define DOIS_ROTULOS_NA_MESMA_LINHA "[ERRO SINTÁTICO] Dois rótulos na mesma linha na linha %d. \n"// dois rótulos na mesma linha;
 
 
 #define SECTION_TEXT_FALTANDO "[ERRO SINTÁTICO] Seção text inexistente. \n"// seção TEXT faltante;
@@ -88,10 +88,10 @@ O valor definido anteriormente foi sobrescrito.\n"
 #define SECTION_INVALIDA "[ERRO SINTÁTICO] Seção inválida na linha %d. \n"// seção inválida;
 
 
-#define TIPO_DE_ARGUMENTO_INVÁLIDO "[ERRO SEMÂNTICO] Tipo de argumento inválido na linha %d. \n"// tipo de argumento inválido;
+#define TIPO_DE_ARGUMENTO_INVALIDO "[ERRO SEMÂNTICO] Tipo de argumento inválido na linha %d. \n"// tipo de argumento inválido;
 
 
-#define MODIFICAÇÃO_DE_UM_VALOR_CTE "[ERRO SEMÂNTICO] Modificação de um valor constante na linha %d. \n"// modificação de um valor constante;
+#define MODIFICACAO_DE_UM_VALOR_CTE "[ERRO SEMÂNTICO] Modificação de um valor constante na linha %d. \n"// modificação de um valor constante;
 
 
 

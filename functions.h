@@ -60,6 +60,13 @@ typedef struct macro_name_table_t{
 }macro_name_table_t;
 
 
+typedef struct assemble_symble_table_t{
+    char name_symble[ MAX_IDENTIFIER_WIDTH +1 ];
+    int define;  // Diz se o simbolo já foi definido ou não. Comtem 0 se false e 1 se true;
+    int value;   //endereço do símbolo
+    token_t *list_of_use; //lista que contem os endereços em que os símbolos foram usados, para os simbolos ainda não definidos;
+    struct assemble_symble_table_t *next;   // Ponteiro para a proxima linha da tabela;
+}assemble_symble_table_t;
 
 
 // Protótipos de funções

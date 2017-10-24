@@ -8,6 +8,8 @@
 #include "functions.h"
 #include "pre_processamento.h"
 #include "processa_macros.h"
+#include "montador.h"
+
 
 int main(int argc, char const *argv[]) {
 
