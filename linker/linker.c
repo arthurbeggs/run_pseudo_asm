@@ -4,23 +4,14 @@
 // Desenvolvido por: Amanda Alina da Cruz Silva  13/0100153   //
 //                   Arthur de Matos Beggs       12/0111098   //
 ////////////////////////////////////////////////////////////////
-//       Arquivo que realiza a montagem de uma passagem.      //
+//                          Ligador                           //
 ////////////////////////////////////////////////////////////////
 
-#ifndef MONTADOR_HEADER
-#define MONTADOR_HEADER
-
-#include "functions.h"
 
 
-// Monta o código
-void montagem(char const *output_file);
+int main(int argc, char const *argv[]) {
 
 
-void montagem(char const *output_file){
-    printf("\n\nMontagem não implementada :C\n\n");
+
+    return 0;
 }
-
-
-
-#endif
