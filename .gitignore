@@ -6,7 +6,6 @@
 *.gch
 
 # Project Specific
-assembler
 *.o
 *.pre
 *.tmp
