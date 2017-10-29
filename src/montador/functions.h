@@ -31,7 +31,7 @@ typedef enum { undefined = 0, label, instruction, directive, symbol, number, com
 
 
 typedef struct token_t{
-    char token_identifier[ MAX_IDENTIFIER_WIDTH +1 ];
+    char token_id[ MAX_IDENTIFIER_WIDTH +1 ];
     token_type type;        // Tipo do token;
     int source_file_line;   // Linha do arquivo original;
     int output_file_byte;   // Posição de memoria no arquivo de saída;
@@ -54,19 +54,19 @@ typedef struct macro_def_table_t{
 
 
 typedef struct macro_name_table_t{
-    char symbol[ MAX_IDENTIFIER_WIDTH + 1 ]; //nome da macro (label da macro)
+    char symbol[ MAX_IDENTIFIER_WIDTH + 1 ]; // Nome da macro (label da macro)
     struct macro_def_table_t *definition;
     struct macro_name_table_t *next;   // Ponteiro para a proxima linha da mnt;
 }macro_name_table_t;
 
 
-typedef struct assemble_symble_table_t{
-    char name_symble[ MAX_IDENTIFIER_WIDTH +1 ];
-    int define;  // Diz se o simbolo já foi definido ou não. Comtem 0 se false e 1 se true;
-    int value;   //endereço do símbolo
-    token_t *list_of_use; //lista que contem os endereços em que os símbolos foram usados, para os simbolos ainda não definidos;
-    struct assemble_symble_table_t *next;   // Ponteiro para a proxima linha da tabela;
-}assemble_symble_table_t;
+typedef struct assemble_symbol_table_t{
+    char symbol[ MAX_IDENTIFIER_WIDTH +1 ];
+    int  defined;            // Diz se o simbolo já foi definido ou não
+    int  value;              // Endereço do símbolo
+    int  last_occurrence;    // Última ocorrência do símbolo
+    struct assemble_symbol_table_t *next;   // Proxima linha da tabela
+}assemble_symbol_table_t;
 
 
 // Protótipos de funções
@@ -177,6 +177,16 @@ void retrieve_macro_from_table( macro_name_table_t **macro_table, char *symbol, 
 
 // Apaga a tabela de definições de macro, liberando memória.
 void erase_macro_table( macro_name_table_t **macro_table );
+
+
+// Insere novo símbolo na tabela de símbolos de montagem
+//TODO
+void insert_assemble_symbol_table_entry( assemble_symbol_table_t **symbol_table, char *id, int defined, int value, int last_occurrence );
+
+
+// Apaga a tabela de símbolos de montagem, liberando memória
+//TODO
+void erase_assemble_symbol_table( assemble_symbol_table_t **symbol_table );
 
 
 
@@ -299,7 +309,7 @@ void generate_line_tokens_list(FILE *source_file, token_t **token_list, int *lin
         line_ptr = strstr(line_ptr, retrieved_token_id) + retrieved_token_length;
 
         // A conversão só pode ser feita após o incremento de line_ptr.
-        convert_string_to_all_caps(last_created_node->token_identifier);
+        convert_string_to_all_caps(last_created_node->token_id);
 
         define_token_type(last_created_node);
 
@@ -321,7 +331,7 @@ void define_token_type(token_t *node){
     char *temp;
 
     // Testa se o token possui ":" (símbolo exclusivo de labels)
-    if (   ( temp = strstr(node->token_identifier, ":") ) \
+    if (   ( temp = strstr(node->token_id, ":") ) \
         && ( temp != NULL ) \
     ){
         // Se o ":" não for o último caracter do identificador, define o tipo como "invalid".
@@ -333,26 +343,26 @@ void define_token_type(token_t *node){
 
             // Testa se o token tem o mesmo nome de uma diretiva ou instrução
             if ( \
-                    ( is_directive(node->token_identifier) ) \
-                ||  ( is_instruction(node->token_identifier) ) \
+                    ( is_directive(node->token_id) ) \
+                ||  ( is_instruction(node->token_id) ) \
             ) {
                 node->type = invalid;
             }
 
             // Se o símbolo for válido, define tipo como "label"
-            else if ( is_symbol(node->token_identifier) ) node->type = label;
+            else if ( is_symbol(node->token_id) ) node->type = label;
 
             // Se o símbolo não for válido, define tipo como "invalid".
             else node->type = invalid;
         }
     }
-    else if ( is_directive(node->token_identifier) )   node->type = directive;
-    else if ( is_instruction(node->token_identifier) ) node->type = instruction;
-    else if ( is_symbol(node->token_identifier) )      node->type = symbol;
-    else if ( is_number(node->token_identifier) )      node->type = number;
-    else if ( is_char(node->token_identifier, ",") )   node->type = comma;
-    else if ( is_char(node->token_identifier, "+") )   node->type = plus;
-    else if ( is_char(node->token_identifier, "-") )   node->type = minus;
+    else if ( is_directive(node->token_id) )   node->type = directive;
+    else if ( is_instruction(node->token_id) ) node->type = instruction;
+    else if ( is_symbol(node->token_id) )      node->type = symbol;
+    else if ( is_number(node->token_id) )      node->type = number;
+    else if ( is_char(node->token_id, ",") )   node->type = comma;
+    else if ( is_char(node->token_id, "+") )   node->type = plus;
+    else if ( is_char(node->token_id, "-") )   node->type = minus;
     else node->type = invalid;
 }
 
@@ -400,7 +410,7 @@ int is_char(char *id, const char *character){
 
 // Testa se o token é uma diretiva
 int is_directive(char *id){
-    if ( !(strcmp(id, "SECTION")) )         return 1;
+    if      ( !(strcmp(id, "SECTION")) )    return 1;
     else if ( !(strcmp(id, "SPACE")) )      return 1;
     else if ( !(strcmp(id, "CONST")) )      return 1;
     else if ( !(strcmp(id, "EQU")) )        return 1;
@@ -419,7 +429,7 @@ int is_directive(char *id){
 
 // Testa se o token é uma istrução
 int is_instruction(char *id){
-    if ( !(strcmp(id, "ADD")) )         return 1;
+    if      ( !(strcmp(id, "ADD")) )    return 1;
     else if ( !(strcmp(id, "SUB")) )    return 1;
     else if ( !(strcmp(id, "MULT")) )   return 1;
     else if ( !(strcmp(id, "DIV")) )    return 1;
@@ -455,7 +465,7 @@ token_t * insert_node_at_list_end(token_t **token_list, char *retrieved_token_id
     token_t *new_node = (token_t*) malloc(sizeof(token_t));
 
     // Inicializa novo token
-    strcpy(new_node->token_identifier, retrieved_token_id);
+    strcpy(new_node->token_id, retrieved_token_id);
     new_node->type = undefined;
     new_node->source_file_line = line_count;
     new_node->output_file_byte = -1;
@@ -579,7 +589,7 @@ void write_line_into_output(token_t *token_list, FILE *output_ptr){
     if ( temp == NULL ) return;
 
     while ( temp != NULL ){
-        fprintf(output_ptr, "%s", temp->token_identifier);
+        fprintf(output_ptr, "%s", temp->token_id);
         if ( temp->type == label ) fprintf(output_ptr, ":");
         if ( ( temp = temp->next ) != NULL  ) fprintf(output_ptr, " ");
     }
@@ -613,12 +623,12 @@ void replace_equ_defined_symbols(token_t *token_list, symbol_table_t *symbol_tab
         if ( temp->type == symbol ){
             status = retrieve_symbol_from_table( \
                         symbol_table, \
-                        temp->token_identifier, \
+                        temp->token_id, \
                         &value);
 
             if ( status == 1 ){
                 temp->type = number;
-                sprintf(temp->token_identifier, "%d", value);
+                sprintf(temp->token_id, "%d", value);
             }
         }
         temp = temp->next;

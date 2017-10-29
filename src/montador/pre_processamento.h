@@ -77,8 +77,8 @@ void pre_processamento(char const *source_file, int with_modules){
             while ( list_crawler != NULL ) {
                 if ( \
                         (  list_crawler->type == directive ) \
-                    &&  (  !( strcmp(list_crawler->token_identifier, "BEGIN")) \
-                        || !( strcmp(list_crawler->token_identifier, "END") ) \
+                    &&  (  !( strcmp(list_crawler->token_id, "BEGIN")) \
+                        || !( strcmp(list_crawler->token_id, "END") ) \
                     ) \
                 ) {
                     // Se o arquivo for standalone, mas possuir diretivas BEGIN ou END, exibe mensagem de erro, limpa a memória e encerra o programa com erro.
@@ -99,7 +99,7 @@ void pre_processamento(char const *source_file, int with_modules){
         if ( ( token_list->type == label ) \
           && ( token_list->next != NULL ) \
           && ( token_list->next->type == directive ) \
-          && !( strcmp(token_list->next->token_identifier, "EQU") ) \
+          && !( strcmp(token_list->next->token_id, "EQU") ) \
         ) {
             // Se o 3º token da linha não for um número ou um sinal seguido de número, lança a mensagem de erro e passa para a leitura da próxima linha, ignorando a atual.
             if ( ( token_list->next->next->type != number ) \
@@ -126,17 +126,17 @@ void pre_processamento(char const *source_file, int with_modules){
                 printf( EQU_TOO_MUCH_ARGUMENTS, token_list->next->source_file_line );
             }
 
-            strcpy(temp_string, token_list->next->next->token_identifier);
+            strcpy(temp_string, token_list->next->next->token_id);
 
             // Adiciona sinal ao valor do símbolo, caso exista
             if ( ( token_list->next->next->type != number ) ) {
-                strcat(temp_string, token_list->next->next->next->token_identifier);
+                strcat(temp_string, token_list->next->next->next->token_id);
             }
 
             // Se o símbolo já tiver sido inserido na tabela de símbolos, seu valor é substituído pelo mais recente, uma mensagem de erro é lançada para indicar a redefinição de símbolos e passa para a leitura da próxima linha.
             if ( insert_label_into_symbol_table( \
                     &symbol_table, \
-                    token_list->token_identifier, \
+                    token_list->token_id, \
                     convert_string_to_int( temp_string ) ) \
             ) { printf( SYMBOL_REDEFINED, token_list->source_file_line ); }
             continue;
@@ -146,13 +146,13 @@ void pre_processamento(char const *source_file, int with_modules){
         else if ( ( token_list->type == directive ) \
              && ( token_list->next != NULL ) \
              && ( token_list->next->type == symbol ) \
-             && !( strcmp(token_list->token_identifier, "IF") ) \
+             && !( strcmp(token_list->token_id, "IF") ) \
         ){
 
             // Recupera símbolo da tabela.
             status = retrieve_symbol_from_table( \
                         symbol_table, \
-                        token_list->next->token_identifier, \
+                        token_list->next->token_id, \
                         &temp);
 
             // Se o símbolo não existir na tabela, lança mensagem de erro e apaga a linha atual e a próxima.

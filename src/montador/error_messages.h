@@ -29,6 +29,8 @@
 
 #define SYMBOL_NOT_DECLARED "[ERRO SEMÂNTICO] Uso de símbolo indefinido na linha %d.\n" //declarações e rótulos ausentes;
 
+#define INVALID_TOKEN_AT_LINE_START "[ERRO] O token %s não é válido como primeiro token de uma linha pós-processada. A linha será ignorada.\n"
+
 
 #define SYMBOL_REDEFINED "[ERRO SEMÂNTICO] Símbolo redefinido na linha %d. O valor definido anteriormente foi sobrescrito.\n"
 

@@ -80,17 +80,17 @@ void processa_macros(char const *source_file){
         // Testa se a linha atual é uma declaração de section
         if (   ( token_list->type == directive ) \
             &&  ( token_list->next->type == directive ) \
-            && !( strcmp(token_list->token_identifier, "SECTION") ) \
+            && !( strcmp(token_list->token_id, "SECTION") ) \
         ) {
 
             // Seção DATA
-            if ( !( strcmp(token_list->next->token_identifier, "DATA") ) ) {
+            if ( !( strcmp(token_list->next->token_id, "DATA") ) ) {
                 inside_data_section = 1;
                 inside_text_section = 0;
             }
 
             // Seção TEXT
-            else if ( !( strcmp(token_list->next->token_identifier, "TEXT") ) ) {
+            else if ( !( strcmp(token_list->next->token_id, "TEXT") ) ) {
                 inside_text_section = 1;
                 inside_data_section = 0;
             }
@@ -106,18 +106,18 @@ void processa_macros(char const *source_file){
         else if  (  ( inside_text_section ) \
             && ( token_list->type == label ) \
             && ( token_list->next->type == directive ) \
-            && ( !( strcmp(token_list->next->token_identifier, "MACRO") ) )
+            && ( !( strcmp(token_list->next->token_id, "MACRO") ) )
         ){
 
             if ( insert_label_into_macro_name_table( \
                     &macro_table, \
-                    token_list->token_identifier, \
+                    token_list->token_id, \
                     &temp ) \
             ) {
                 printf( MACRO_REDEFINED, token_list->source_file_line );
 
                 // Apaga macro sem colocá-la na tabela de definições
-                while ( !!( strcmp(token_list->token_identifier, "ENDMACRO") ) ){
+                while ( !!( strcmp(token_list->token_id, "ENDMACRO") ) ){
                     erase_token_list(&token_list);
                     retrieve_token_list_from_file(&token_list, source_ptr);
 
@@ -132,11 +132,11 @@ void processa_macros(char const *source_file){
                 goto case_break;
             }
 
-            while ( !!( strcmp(token_list->token_identifier, "ENDMACRO") ) ){
+            while ( !!( strcmp(token_list->token_id, "ENDMACRO") ) ){
                 token_list = NULL;
                 retrieve_token_list_from_file(&token_list, source_ptr);
 
-                if ((!( strcmp(token_list->token_identifier, "ENDMACRO")) )) {
+                if ((!( strcmp(token_list->token_id, "ENDMACRO")) )) {
                     erase_token_list(&token_list);
                     break;
                 }
@@ -152,7 +152,7 @@ void processa_macros(char const *source_file){
 
         // Substitui macro
         else if ( token_list->type == symbol ) {
-            retrieve_macro_from_table( &macro_table, token_list->token_identifier, &temp );
+            retrieve_macro_from_table( &macro_table, token_list->token_id, &temp );
             if ( temp != NULL ){
                 define_ptr = temp->definition;
 
