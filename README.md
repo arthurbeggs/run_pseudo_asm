@@ -5,14 +5,16 @@
 ***
 
 ### **Instruções de Compilação:**
-
+```bash
+> make
+```
 
 ***
 
 ### **Montador:**
 
 ```bash
-> ./assembler <source_file> ...
+> ./montador <source_file> ...
 ```
 
 
@@ -43,7 +45,7 @@ T: CÓDIGO_MÁQUINA
 ### **Ligador:**
 
 ```
-> ./linker <object_file> ...
+> ./ligador <object_file> ...
 ```
 
 Recebe de 1 a 3 arquivos `.o` e gera um arquivo executável sem extensão com nome de saída igual ao nome do primeiro arquivo objeto fornecido.
@@ -70,7 +72,7 @@ T: CÓDIGO_MÁQUINA
 ### **Carregador:**
 
 ```bash
-> ./loader <executable_file> <chunks> <chunk_size> ... <chunk_address> ...
+> ./carregador <executable_file> <chunks> <chunk_size> ... <chunk_address> ...
 ```
 
 Recebe como argumentos:
