@@ -10,3 +10,9 @@
 *.pre
 *.tmp
 *.mcr
+carregador
+ligador
+montador
+!carregador/
+!ligador/
+!montador/
