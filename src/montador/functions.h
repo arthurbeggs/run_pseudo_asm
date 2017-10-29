@@ -73,6 +73,7 @@ typedef struct assemble_symble_table_t{
 
 
 // Avalia se os argumentos passados ao programa estão corretos.
+// Retorna 0 se os argumentos passados não estiverem corretos. Se estiverem, retorna 1.
 int valid_command(int, char const **);
 
 
@@ -182,22 +183,22 @@ void erase_macro_table( macro_name_table_t **macro_table );
 // Implementações
 
 // Avalia se os argumentos passados ao programa estão corretos.
-int valid_command(int count, char const *arguments[]){
+// Retorna 0 se os argumentos passados não estiverem corretos. Se estiverem, retorna 1.
+int valid_command(int argc, char const *argv[]){
     char const *temp;
-    if ( \
-        (count != 4) \
-        || (   (strcmp(arguments[1], "-p")) \
-            && (strcmp(arguments[1], "-m")) \
-            && (strcmp(arguments[1], "-o")) ) \
-        || ( (temp = strstr(arguments[2], ".asm")) == NULL) \
-        || ( (*(temp+4)) != '\0') \
-        || ( (temp = strstr(arguments[3], ".o")) == NULL) \
-        || ( (*(temp+2)) != '\0') \
-    ) {
-        printf( MAN_MESSAGE, arguments[0], arguments[0], arguments[0] );
-        return 1;
+    int count;
+
+    if ( ( argc < 2 ) || ( argc > 4 ) ){
+        printf( MAN_MESSAGE, argv[0] );
+        return 0;
     }
-    else return 0;
+    for ( count = 1; count < argc; count++ ) {
+        if ( !( temp = strstr(argv[count], ".asm") ) || ( *(temp+4) != '\0') ){
+            printf( MAN_MESSAGE, argv[0] );
+            return 0;
+        }
+    }
+    return 1;
 }
 
 
@@ -391,15 +392,17 @@ int is_char(char *id, const char *character){
 
 // Testa se o token é uma diretiva
 int is_directive(char *id){
-    if ( !(strcmp(id, "SECTION")) )     return 1;
-    else if ( !(strcmp(id, "SPACE")) )  return 1;
-    else if ( !(strcmp(id, "CONST")) )  return 1;
-    else if ( !(strcmp(id, "EQU")) )    return 1;
-    else if ( !(strcmp(id, "IF")) )     return 1;
-    else if ( !(strcmp(id, "MACRO")) )  return 1;
-    else if ( !(strcmp(id, "END")) )    return 1;
-    else if ( !(strcmp(id, "TEXT")) )   return 1;
-    else if ( !(strcmp(id, "DATA")) )   return 1;
+    if ( !(strcmp(id, "SECTION")) )         return 1;
+    else if ( !(strcmp(id, "SPACE")) )      return 1;
+    else if ( !(strcmp(id, "CONST")) )      return 1;
+    else if ( !(strcmp(id, "EQU")) )        return 1;
+    else if ( !(strcmp(id, "IF")) )         return 1;
+    else if ( !(strcmp(id, "MACRO")) )      return 1;
+    else if ( !(strcmp(id, "ENDMACRO")) )   return 1;
+    else if ( !(strcmp(id, "BEGIN")) )      return 1;
+    else if ( !(strcmp(id, "END")) )        return 1;
+    else if ( !(strcmp(id, "TEXT")) )       return 1;
+    else if ( !(strcmp(id, "DATA")) )       return 1;
     else return 0; // Falso
 }
 

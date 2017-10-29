@@ -13,46 +13,50 @@
 #include "functions.h"
 
 // Realiza o pré processamento do arquivo
-void pre_processamento(char const *source_file, char const *output_file);
+void pre_processamento(char const *source_file, int with_modules);
 
 
-void pre_processamento(char const *source_file, char const *output_file){
+void pre_processamento(char const *source_file, int with_modules){
 
     char temp_string[ MAX_IDENTIFIER_WIDTH + 5 ];
 
     token_t *token_list = NULL;
+    token_t *list_crawler = NULL;
 
     symbol_table_t *symbol_table = NULL;
 
     int line_count = 0, temp, status;
 
-    strcpy(temp_string, output_file);
 
     FILE *source_ptr; // Arquivo de entrada - source file pointer
     FILE *output_ptr; // Arquivo de saída - output file pointer
     FILE *binary_ptr; // Arquivo intermediário - binary file pointer
 
-    source_ptr = fopen(source_file, "r"); // Abre o arquivo de entrada em modo leitura.
-
-    output_ptr = fopen(strcat(temp_string, ".pre"), "w"); // Cria o arquivo de saída com o nome dado pelo usuário.
-
-    binary_ptr = fopen(strcat(temp_string, ".tmp"), "wb"); // Cria o arquivo intermediário com o nome dado pelo usuário.
-
-
+    // Abre o arquivo de entrada em modo leitura.
+    strcpy(temp_string, source_file);
+    strcat(temp_string, ".asm");
+    source_ptr = fopen(temp_string, "r");
     if ( source_ptr == NULL ){
-        printf("\n Houve um erro ao abrir o arquivo %s !\n", source_file);
+        printf("\n Houve um erro ao abrir o arquivo %s !\n", temp_string);
         exit(1);
     }
 
+    // Cria o arquivo de saída em modo escrita.
+    strcpy(temp_string, source_file);
+    strcat(temp_string, ".pre");
+    output_ptr = fopen(temp_string, "w");
     if ( output_ptr == NULL ){
-        printf("\n Houve um erro ao criar o arquivo %s !\n", output_file);
+        printf("\n Houve um erro ao criar o arquivo %s !\n", temp_string);
         exit(1);
     }
 
+    // Cria o arquivo intermediário em modo de escrita binária.
+    binary_ptr = fopen(strcat(temp_string, ".tmp"), "wb");
     if ( binary_ptr == NULL ){
         printf("\n Houve um erro ao criar o arquivo temporário! \n");
         exit(1);
     }
+
 
     while ( !(feof(source_ptr)) ){
         ++line_count;
@@ -65,6 +69,31 @@ void pre_processamento(char const *source_file, char const *output_file){
 
         // Se a linha estiver vazia, lê a próxima linha.
         if ( token_list == NULL ) continue;
+
+
+        // Testa se o programa não tem módulos, mas tem diretiva BEGIN ou END
+        if ( !(with_modules) ) {
+            list_crawler = token_list;
+            while ( list_crawler != NULL ) {
+                if ( \
+                        (  list_crawler->type == directive ) \
+                    &&  (  !( strcmp(list_crawler->token_identifier, "BEGIN")) \
+                        || !( strcmp(list_crawler->token_identifier, "END") ) \
+                    ) \
+                ) {
+                    // Se o arquivo for standalone, mas possuir diretivas BEGIN ou END, exibe mensagem de erro, limpa a memória e encerra o programa com erro.
+                    printf( STANDALONE_AS_MODULE_ERR, source_file );
+                    erase_token_list(&token_list);
+                    erase_symbol_table(symbol_table);
+                    fclose (source_ptr);
+                    fclose (output_ptr);
+                    fclose (binary_ptr);
+                    exit(1);
+                }
+                list_crawler = list_crawler->next;
+            }
+        }
+
 
         // Testa se a linha tem uma diretiva EQU na posição esperada (2º token, antecedido de um label).
         if ( ( token_list->type == label ) \
