@@ -331,8 +331,16 @@ void define_token_type(token_t *node){
             // Remove o ":" do final do token
             *temp = '\0';
 
+            // Testa se o token tem o mesmo nome de uma diretiva ou instrução
+            if ( \
+                    ( is_directive(node->token_identifier) ) \
+                ||  ( is_instruction(node->token_identifier) ) \
+            ) {
+                node->type = invalid;
+            }
+
             // Se o símbolo for válido, define tipo como "label"
-            if ( is_symbol(node->token_identifier) ) node->type = label;
+            else if ( is_symbol(node->token_identifier) ) node->type = label;
 
             // Se o símbolo não for válido, define tipo como "invalid".
             else node->type = invalid;
@@ -403,6 +411,8 @@ int is_directive(char *id){
     else if ( !(strcmp(id, "END")) )        return 1;
     else if ( !(strcmp(id, "TEXT")) )       return 1;
     else if ( !(strcmp(id, "DATA")) )       return 1;
+    else if ( !(strcmp(id, "PUBLIC")) )     return 1;
+    else if ( !(strcmp(id, "EXTERN")) )     return 1;
     else return 0; // Falso
 }
 
