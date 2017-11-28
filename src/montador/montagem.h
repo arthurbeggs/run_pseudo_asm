@@ -104,8 +104,8 @@ void montagem(char const *source_file, int modularized){
                     if ( token_list->next->next != NULL ){
                         value = convert_token_to_int(token_list->next->next->token_id);
                     }
-                    else value = 0;
-                    for (counter = 0; ((counter < value) || (counter == 0)); counter++){
+                    else value = 1;
+                    for (counter = 0; (counter < value) ; counter++){
                         fwrite( &zero, sizeof(int), 1, binary_ptr);
                         word_count++;
                     }
@@ -117,17 +117,19 @@ void montagem(char const *source_file, int modularized){
 
                     value = convert_token_to_int(token_list->next->next->token_id);
                     fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                    word_count++;
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "BEGIN") ) ) {
                     table_ptr = define_entry_on_symbol_table( &symbol_table, token_list->token_id,  word_count );
                     save_defined_value_into_file( table_ptr->address, binary_ptr, word_count );
-                    // NOTE: Talvez BEGIN precise indicar a posição inicial do arquivo.
+                    // DEBUG: Talvez BEGIN precise indicar a posição inicial do arquivo.
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "EXTERN") ) ) {
                     table_ptr = define_entry_on_symbol_table( &symbol_table, token_list->token_id,  0 );
-                    // save_defined_value_into_file( table_ptr->address, binary_ptr, 0 );
+                    save_defined_value_into_file( table_ptr->address, binary_ptr, 0 );
                     table_ptr->extern_symbol = 1;
                 }
 
@@ -155,6 +157,8 @@ void montagem(char const *source_file, int modularized){
                     value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                    word_count++;
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "SUB") ) ) {
@@ -167,6 +171,8 @@ void montagem(char const *source_file, int modularized){
                     value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                    word_count++;
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "MULT") ) ) {
@@ -179,6 +185,8 @@ void montagem(char const *source_file, int modularized){
                     value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                    word_count++;
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "DIV") ) ) {
@@ -191,6 +199,8 @@ void montagem(char const *source_file, int modularized){
                     value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                    word_count++;
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "JMP") ) ) {
@@ -203,6 +213,8 @@ void montagem(char const *source_file, int modularized){
                     value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                    word_count++;
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "JMPN") ) ) {
@@ -215,6 +227,8 @@ void montagem(char const *source_file, int modularized){
                     value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                    word_count++;
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "JMPP") ) ) {
@@ -227,6 +241,8 @@ void montagem(char const *source_file, int modularized){
                     value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                    word_count++;
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "JMPZ") ) ) {
@@ -239,6 +255,8 @@ void montagem(char const *source_file, int modularized){
                     value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                    word_count++;
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "COPY") ) ) {
@@ -258,6 +276,8 @@ void montagem(char const *source_file, int modularized){
                     value += get_increment_value( (find_token_by_type(token_list, comma))->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                    word_count++;
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "LOAD") ) ) {
@@ -270,6 +290,8 @@ void montagem(char const *source_file, int modularized){
                     value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                    word_count++;
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "STORE") ) ) {
@@ -282,6 +304,8 @@ void montagem(char const *source_file, int modularized){
                     value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                    word_count++;
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "INPUT") ) ) {
@@ -294,6 +318,8 @@ void montagem(char const *source_file, int modularized){
                     value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                    word_count++;
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "OUTPUT") ) ) {
@@ -306,6 +332,8 @@ void montagem(char const *source_file, int modularized){
                     value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                    word_count++;
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "STOP") ) ) {
@@ -357,6 +385,8 @@ void montagem(char const *source_file, int modularized){
                 value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                word_count++;
             }
 
             else if ( !(strcmp(token_list->token_id, "SUB") ) ) {
@@ -369,6 +399,8 @@ void montagem(char const *source_file, int modularized){
                 value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                word_count++;
             }
 
             else if ( !(strcmp(token_list->token_id, "MULT") ) ) {
@@ -381,6 +413,8 @@ void montagem(char const *source_file, int modularized){
                 value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                word_count++;
             }
 
             else if ( !(strcmp(token_list->token_id, "DIV") ) ) {
@@ -393,6 +427,8 @@ void montagem(char const *source_file, int modularized){
                 value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                word_count++;
             }
 
             else if ( !(strcmp(token_list->token_id, "JMP") ) ) {
@@ -405,6 +441,8 @@ void montagem(char const *source_file, int modularized){
                 value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                word_count++;
             }
 
             else if ( !(strcmp(token_list->token_id, "JMPN") ) ) {
@@ -417,6 +455,8 @@ void montagem(char const *source_file, int modularized){
                 value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                word_count++;
             }
 
             else if ( !(strcmp(token_list->token_id, "JMPP") ) ) {
@@ -429,6 +469,8 @@ void montagem(char const *source_file, int modularized){
                 value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                word_count++;
             }
 
             else if ( !(strcmp(token_list->token_id, "JMPZ") ) ) {
@@ -441,6 +483,8 @@ void montagem(char const *source_file, int modularized){
                 value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                word_count++;
             }
 
             else if ( !(strcmp(token_list->token_id, "COPY") ) ) {
@@ -460,6 +504,8 @@ void montagem(char const *source_file, int modularized){
                 value += get_increment_value( (find_token_by_type(token_list, comma))->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                word_count++;
             }
 
             else if ( !(strcmp(token_list->token_id, "LOAD") ) ) {
@@ -472,6 +518,8 @@ void montagem(char const *source_file, int modularized){
                 value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                word_count++;
             }
 
             else if ( !(strcmp(token_list->token_id, "STORE") ) ) {
@@ -484,6 +532,8 @@ void montagem(char const *source_file, int modularized){
                 value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                word_count++;
             }
 
             else if ( !(strcmp(token_list->token_id, "INPUT") ) ) {
@@ -496,6 +546,8 @@ void montagem(char const *source_file, int modularized){
                 value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                word_count++;
             }
 
             else if ( !(strcmp(token_list->token_id, "OUTPUT") ) ) {
@@ -508,6 +560,8 @@ void montagem(char const *source_file, int modularized){
                 value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                word_count++;
             }
 
             else if ( !(strcmp(token_list->token_id, "STOP") ) ) {

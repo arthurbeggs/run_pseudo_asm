@@ -189,7 +189,6 @@ void erase_macro_table( macro_name_table_t **macro_table );
 
 
 // Apaga a tabela de símbolos de montagem, liberando memória
-//TODO
 void erase_assembler_symbol_table( assembler_symbol_table_t **symbol_table );
 
 
@@ -830,7 +829,6 @@ int check_symbol_table( assembler_symbol_table_t **table, char *symbol, int addr
         table_ptr = table_ptr->next;
     }
 
-    //NOTE: verificar possível problema de ponteiro.
     table_ptr = create_node_at_table_end( table, symbol, 0, 0, 0, 0);
     create_node_at_address_vector_end(&(table_ptr->address), address);
 
@@ -856,7 +854,6 @@ assembler_symbol_table_t * define_entry_on_symbol_table( assembler_symbol_table_
         table_ptr = table_ptr->next;
     }
 
-    //NOTE: verificar possível problema de ponteiro.
     return create_node_at_table_end( table, symbol, 1, value, 0, 0);
 
 }
@@ -979,9 +976,8 @@ void parse_bin_file_to_text(FILE *txt, FILE *bin){
 
     rewind(bin);
     while ( !( feof(bin) ) ){
-        if ( feof(bin) ) break;
-
         fread( &temp, sizeof(int), 1, bin);
+        if ( feof(bin) ) break;
         fprintf(txt, "%d ", temp);
     }
 
