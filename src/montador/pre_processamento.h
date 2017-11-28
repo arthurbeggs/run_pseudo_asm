@@ -72,6 +72,7 @@ void pre_processamento(char const *source_file, int with_modules){
 
 
         // Testa se o programa não tem módulos, mas tem diretiva BEGIN ou END
+        // TODO: Retirar daqui e colocar na montagem.
         if ( !(with_modules) ) {
             list_crawler = token_list;
             while ( list_crawler != NULL ) {

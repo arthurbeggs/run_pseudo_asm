@@ -60,13 +60,22 @@ typedef struct macro_name_table_t{
 }macro_name_table_t;
 
 
-typedef struct assemble_symbol_table_t{
-    char symbol[ MAX_IDENTIFIER_WIDTH +1 ];
+typedef struct address_vector_t{
+    int value;
+    struct address_vector_t *next;
+}address_vector_t;
+
+
+typedef struct assembler_symbol_table_t{
+    char symbol[ MAX_IDENTIFIER_WIDTH + 1 ];
     int  defined;            // Diz se o simbolo já foi definido ou não
     int  value;              // Endereço do símbolo
-    int  last_occurrence;    // Última ocorrência do símbolo
-    struct assemble_symbol_table_t *next;   // Proxima linha da tabela
-}assemble_symbol_table_t;
+    int  public_symbol;
+    int  extern_symbol;
+    struct address_vector_t *address;
+    struct assembler_symbol_table_t *next;   // Proxima linha da tabela
+}assembler_symbol_table_t;
+
 
 
 // Protótipos de funções
@@ -179,14 +188,36 @@ void retrieve_macro_from_table( macro_name_table_t **macro_table, char *symbol, 
 void erase_macro_table( macro_name_table_t **macro_table );
 
 
-// Insere novo símbolo na tabela de símbolos de montagem
-//TODO
-void insert_assemble_symbol_table_entry( assemble_symbol_table_t **symbol_table, char *id, int defined, int value, int last_occurrence );
-
-
 // Apaga a tabela de símbolos de montagem, liberando memória
 //TODO
-void erase_assemble_symbol_table( assemble_symbol_table_t **symbol_table );
+void erase_assembler_symbol_table( assembler_symbol_table_t **symbol_table );
+
+
+// Procura se símbolo existe na tabela.
+// Retorna o endereço do símbolo já definido ou 0 apra símbolo não definido.
+// TODO
+int check_symbol_table( assembler_symbol_table_t *table, char *symbol, int address );
+
+
+// TODO
+void define_entry_on_symbol_table( assembler_symbol_table_t *table, char *symbol, int value );
+
+
+// Cria novo nó na tabela de símbolos.
+// Retorna o nó criado.
+assembler_symbol_table_t * create_node_at_table_end(assembler_symbol_table_t **table, char *symbol, int defined, int value, int public_symbol, int extern_symbol);
+
+
+// Cria novo nó no vetor de endereços.
+void create_node_at_address_vector_end(address_vector_t **addr_vector, int value);
+
+
+
+int get_increment_value( token_t *token_list );
+
+
+
+int convert_token_to_int(char *sym);
 
 
 
@@ -239,7 +270,7 @@ int get_next_token(char *input_line, char *output_token){
     // Comportamento do scanset definido:
     // %*[ \t] ignora espaços e tabs que antecedem o token;
     // %[^ \t] lê o restante da linha (máximo de 100 caracteres), para ao encontrar a primeira ocorrência de um espaço ou tab e salva a string lida em output_token (não separa tokens ",", "+" e "-" quando emendados a outros tokens);
-    //NOTE: Se o tamanho da macro MAX_IDENTIFIER_WIDTH for alterado (!= 500), é necessário alterar o tamanho máximo do 2º parâmetro do scanset.
+    //NOTE: Se o tamanho da macro MAX_IDENTIFIER_WIDTH for alterado (!= 100), é necessário alterar o tamanho máximo do 2º parâmetro do scanset.
     sscanf(input_line, " %100[^\t ]", output_token);
 
     // Testa se o token possui uma vírgula e a separa caso precise
@@ -785,6 +816,125 @@ void erase_macro_table( macro_name_table_t **macro_table ){
     }
 }
 
+
+
+int check_symbol_table( assembler_symbol_table_t *table, char *symbol, int address ){
+
+    assembler_symbol_table_t *table_ptr = table;
+    assembler_symbol_table_t *prev_node = NULL;
+
+    while ( table_ptr != NULL ){
+        if ( !( strcmp( table_ptr->symbol, symbol ) ) ) {
+            create_node_at_address_vector_end(&(table_ptr->address), address);
+            return table_ptr->value;
+        }
+        prev_node = table_ptr;
+        table_ptr = table_ptr->next;
+    }
+
+    create_node_at_table_end( &(prev_node), symbol, 0, 0, 0, 0);
+
+    return 0;
+}
+
+
+
+void define_entry_on_symbol_table( assembler_symbol_table_t *table, char *symbol, int value ){
+    //TODO
+
+    assembler_symbol_table_t *table_ptr = table;
+
+    while ( table_ptr != NULL ){
+        if ( !( strcmp( table_ptr->symbol, symbol ) ) ){
+            table_ptr->defined = 1;
+            table_ptr->value   = value;
+
+
+            return;
+        }
+    }
+
+
+
+
+
+
+}
+
+
+assembler_symbol_table_t * create_node_at_table_end(assembler_symbol_table_t **table, char *symbol, int defined, int value, int public_symbol, int extern_symbol){
+
+    assembler_symbol_table_t *temp      = NULL;
+    assembler_symbol_table_t *new_node  = (assembler_symbol_table_t*) malloc(sizeof(assembler_symbol_table_t));
+
+    // Inicializa novo token
+    strcpy(new_node->symbol, symbol);
+    new_node->defined       = defined;
+    new_node->value         = value;
+    new_node->public_symbol = public_symbol;
+    new_node->extern_symbol = extern_symbol;
+    new_node->address       = NULL;
+    new_node->next          = NULL;
+
+    if ( *table == NULL ) {
+        *table = new_node;
+    }
+    else {
+        temp = *table;
+        while ( temp->next != NULL ) temp = temp->next;
+        temp->next = new_node;
+    }
+
+    return new_node;
+}
+
+
+
+void create_node_at_address_vector_end(address_vector_t **addr_vector, int value){
+
+    address_vector_t *temp      = NULL;
+    address_vector_t *new_node  = (address_vector_t*) malloc(sizeof(address_vector_t));
+
+    new_node->value = value;
+    new_node->next  = NULL;
+
+    if ( *addr_vector == NULL ){
+        *addr_vector = new_node;
+    }
+    else {
+        temp = *addr_vector;
+        while ( temp->next != NULL ) temp = temp->next;
+        temp->next = new_node;
+    }
+}
+
+
+
+int get_increment_value( token_t *token_list ){
+    if ( ( token_list != NULL ) && ( token_list->next != NULL ) ) {
+        if ( token_list->type == plus ){
+            return ( convert_token_to_int(token_list->next->token_id) );
+        }
+
+        else if ( token_list->type == minus ){
+            return - ( convert_token_to_int(token_list->next->token_id) );
+        }
+    }
+    return 0;
+}
+
+
+
+int convert_token_to_int(char *sym){
+    int temp;
+
+    if ( ( sym == strstr(sym, "0X") ) && ( sscanf(sym, "%X", &temp) ) )
+        return temp;
+    else if ( ( sscanf(sym, "%d", &temp) ) )
+        return temp;
+    else
+        return 0;
+}
 
 
 

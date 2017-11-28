@@ -14,18 +14,23 @@
 
 
 // Monta o código
-void montagem(char const *source_file);
+// Se modularized == 1, o arquivo deve conter as diretivas BEGIN e END. Se modularized == 0 o arquivo não deve conter as diretivas BEGIN e END.
+void montagem(char const *source_file, int modularized);
 
 
-void montagem(char const *source_file){
+void montagem(char const *source_file, int modularized){
 
     char temp_string[ MAX_IDENTIFIER_WIDTH + 5 ];
-    token_t *token_list = NULL;
+    token_t *token_list                     = NULL;
+    assembler_symbol_table_t *symbol_table  = NULL;
 
-    // int word_count = 0;
 
-    FILE *source_ptr; // Ponteiro do arquivo de saída do pré processamento
-    FILE *output_ptr; // Ponteiro do arquivo de saída do processamento da macro
+    int word_count = 0;
+    int value;
+
+    FILE *source_ptr; // Ponteiro do arquivo de saída do processamento da macro
+    FILE *output_ptr; // Ponteiro do arquivo de saída do montador
+    FILE *binary_ptr; // Ponteiro do arquivo binário temporário
 
 
     // Abre o arquivo com lista de tokens em modo leitura binária.
@@ -46,12 +51,22 @@ void montagem(char const *source_file){
         exit(1);
     }
 
+    // Cria o arquivo intermediário em modo de leitura/escrita binária.
+    binary_ptr = fopen(strcat(temp_string, ".tmp"), "wb+");
+    if ( binary_ptr == NULL ){
+        printf("\n Houve um erro ao criar o arquivo temporário! \n");
+        exit(1);
+    }
+
 
     while ( !( feof(source_ptr) ) ) {
         erase_token_list(&token_list);
         retrieve_token_list_from_file(&token_list, source_ptr);
 
         if ( token_list->type == label ) {
+
+            define_entry_on_symbol_table( symbol_table, token_list->token_id,  word_count );
+
             if ( token_list->next->type == directive ) {
                 if ( !(strcmp(token_list->next->token_id, "SPACE") ) ) {
 
@@ -78,63 +93,176 @@ void montagem(char const *source_file){
             }
 
             else if ( token_list->next->type == instruction ) {
-                //TODO: Passar para função depois de definir argumentos
                 if ( !(strcmp(token_list->next->token_id, "ADD") ) ) {
+                    value = 1;
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                    word_count++;
+
+                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next );
+
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "SUB") ) ) {
+                    value = 2;
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                    word_count++;
+
+                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next );
+
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "MULT") ) ) {
+                    value = 3;
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                    word_count++;
+
+                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next );
+
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "DIV") ) ) {
+                    value = 4;
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                    word_count++;
+
+                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next );
+
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "JMP") ) ) {
+                    value = 5;
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                    word_count++;
+
+                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next );
+
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "JMPN") ) ) {
+                    value = 6;
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                    word_count++;
+
+                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next );
+
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "JMPP") ) ) {
+                    value = 7;
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                    word_count++;
+
+                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next );
+
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "JMPZ") ) ) {
+                    value = 8;
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                    word_count++;
+
+                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next );
+
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "COPY") ) ) {
+                    value = 9;
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                    word_count++;
+
+                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next );
+
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                    word_count++;
+
+                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next );
+
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "LOAD") ) ) {
+                    value = 10;
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                    word_count++;
+
+                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next );
+
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "STORE") ) ) {
+                    value = 11;
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                    word_count++;
+
+                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next );
+
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "INPUT") ) ) {
+                    value = 12;
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                    word_count++;
+
+                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next );
+
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "OUTPUT") ) ) {
+                    value = 13;
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                    word_count++;
+
+                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next );
+
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "STOP") ) ) {
+                    value = 14;
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                    word_count++;
 
                 }
-
             }
 
             // Erro
@@ -167,60 +295,174 @@ void montagem(char const *source_file){
         }
 
         else if ( token_list->type == instruction ) {
-            //TODO: Passar para função depois de definir argumentos
-            if ( !(strcmp(token_list->next->token_id, "ADD") ) ) {
+            if ( !(strcmp(token_list->token_id, "ADD") ) ) {
+                value = 1;
+                fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                word_count++;
+
+                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
+                value += get_increment_value( token_list->next );
+
+                fwrite( &value, sizeof(int), 1, binary_ptr);
             }
 
-            else if ( !(strcmp(token_list->next->token_id, "SUB") ) ) {
+            else if ( !(strcmp(token_list->token_id, "SUB") ) ) {
+                value = 2;
+                fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                word_count++;
+
+                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
+                value += get_increment_value( token_list->next );
+
+                fwrite( &value, sizeof(int), 1, binary_ptr);
             }
 
-            else if ( !(strcmp(token_list->next->token_id, "MULT") ) ) {
+            else if ( !(strcmp(token_list->token_id, "MULT") ) ) {
+                value = 3;
+                fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                word_count++;
+
+                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
+                value += get_increment_value( token_list->next );
+
+                fwrite( &value, sizeof(int), 1, binary_ptr);
             }
 
-            else if ( !(strcmp(token_list->next->token_id, "DIV") ) ) {
+            else if ( !(strcmp(token_list->token_id, "DIV") ) ) {
+                value = 4;
+                fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                word_count++;
+
+                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
+                value += get_increment_value( token_list->next );
+
+                fwrite( &value, sizeof(int), 1, binary_ptr);
             }
 
-            else if ( !(strcmp(token_list->next->token_id, "JMP") ) ) {
+            else if ( !(strcmp(token_list->token_id, "JMP") ) ) {
+                value = 5;
+                fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                word_count++;
+
+                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
+                value += get_increment_value( token_list->next );
+
+                fwrite( &value, sizeof(int), 1, binary_ptr);
             }
 
-            else if ( !(strcmp(token_list->next->token_id, "JMPN") ) ) {
+            else if ( !(strcmp(token_list->token_id, "JMPN") ) ) {
+                value = 6;
+                fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                word_count++;
+
+                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
+                value += get_increment_value( token_list->next );
+
+                fwrite( &value, sizeof(int), 1, binary_ptr);
             }
 
-            else if ( !(strcmp(token_list->next->token_id, "JMPP") ) ) {
+            else if ( !(strcmp(token_list->token_id, "JMPP") ) ) {
+                value = 7;
+                fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                word_count++;
+
+                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
+                value += get_increment_value( token_list->next );
+
+                fwrite( &value, sizeof(int), 1, binary_ptr);
             }
 
-            else if ( !(strcmp(token_list->next->token_id, "JMPZ") ) ) {
+            else if ( !(strcmp(token_list->token_id, "JMPZ") ) ) {
+                value = 8;
+                fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                word_count++;
+
+                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
+                value += get_increment_value( token_list->next );
+
+                fwrite( &value, sizeof(int), 1, binary_ptr);
             }
 
-            else if ( !(strcmp(token_list->next->token_id, "COPY") ) ) {
+            else if ( !(strcmp(token_list->token_id, "COPY") ) ) {
+                value = 9;
+                fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                word_count++;
+
+                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
+                value += get_increment_value( token_list->next );
+
+                fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                word_count++;
+
+                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
+                value += get_increment_value( token_list->next );
+
+                fwrite( &value, sizeof(int), 1, binary_ptr);
             }
 
-            else if ( !(strcmp(token_list->next->token_id, "LOAD") ) ) {
+            else if ( !(strcmp(token_list->token_id, "LOAD") ) ) {
+                value = 10;
+                fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                word_count++;
+
+                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
+                value += get_increment_value( token_list->next );
+
+                fwrite( &value, sizeof(int), 1, binary_ptr);
             }
 
-            else if ( !(strcmp(token_list->next->token_id, "STORE") ) ) {
+            else if ( !(strcmp(token_list->token_id, "STORE") ) ) {
+                value = 11;
+                fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                word_count++;
+
+                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
+                value += get_increment_value( token_list->next );
+
+                fwrite( &value, sizeof(int), 1, binary_ptr);
             }
 
-            else if ( !(strcmp(token_list->next->token_id, "INPUT") ) ) {
+            else if ( !(strcmp(token_list->token_id, "INPUT") ) ) {
+                value = 12;
+                fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                word_count++;
+
+                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
+                value += get_increment_value( token_list->next );
+
+                fwrite( &value, sizeof(int), 1, binary_ptr);
             }
 
-            else if ( !(strcmp(token_list->next->token_id, "OUTPUT") ) ) {
+            else if ( !(strcmp(token_list->token_id, "OUTPUT") ) ) {
+                value = 13;
+                fwrite( &value, sizeof(int), 1, binary_ptr);
 
+                word_count++;
+
+                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
+                value += get_increment_value( token_list->next );
+
+                fwrite( &value, sizeof(int), 1, binary_ptr);
             }
 
-            else if ( !(strcmp(token_list->next->token_id, "STOP") ) ) {
+            else if ( !(strcmp(token_list->token_id, "STOP") ) ) {
+                value = 14;
+                fwrite( &value, sizeof(int), 1, binary_ptr);
+
+                word_count++;
 
             }
         }
@@ -236,6 +478,11 @@ void montagem(char const *source_file){
 
 
     }
+
+
+    fclose (source_ptr);
+    fclose (output_ptr);
+    fclose (binary_ptr);
 
 }
 
