@@ -195,12 +195,10 @@ void erase_assembler_symbol_table( assembler_symbol_table_t **symbol_table );
 
 // Procura se símbolo existe na tabela.
 // Retorna o endereço do símbolo já definido ou 0 apra símbolo não definido.
-// TODO
-int check_symbol_table( assembler_symbol_table_t *table, char *symbol, int address );
+int check_symbol_table( assembler_symbol_table_t **table, char *symbol, int address );
 
 
-// TODO
-void define_entry_on_symbol_table( assembler_symbol_table_t *table, char *symbol, int value );
+assembler_symbol_table_t * define_entry_on_symbol_table( assembler_symbol_table_t **table, char *symbol, int value );
 
 
 // Cria novo nó na tabela de símbolos.
@@ -818,31 +816,33 @@ void erase_macro_table( macro_name_table_t **macro_table ){
 
 
 
-int check_symbol_table( assembler_symbol_table_t *table, char *symbol, int address ){
+int check_symbol_table( assembler_symbol_table_t **table, char *symbol, int address ){
 
-    assembler_symbol_table_t *table_ptr = table;
-    assembler_symbol_table_t *prev_node = NULL;
+    assembler_symbol_table_t *table_ptr = *table;
+    // assembler_symbol_table_t *prev_node = NULL;
 
     while ( table_ptr != NULL ){
         if ( !( strcmp( table_ptr->symbol, symbol ) ) ) {
             create_node_at_address_vector_end(&(table_ptr->address), address);
             return table_ptr->value;
         }
-        prev_node = table_ptr;
+        // prev_node = table_ptr;
         table_ptr = table_ptr->next;
     }
 
-    create_node_at_table_end( &(prev_node), symbol, 0, 0, 0, 0);
+    //NOTE: verificar possível problema de ponteiro.
+    table_ptr = create_node_at_table_end( table, symbol, 0, 0, 0, 0);
+    create_node_at_address_vector_end(&(table_ptr->address), address);
 
     return 0;
 }
 
 
 
-void define_entry_on_symbol_table( assembler_symbol_table_t *table, char *symbol, int value ){
-    //TODO
+assembler_symbol_table_t * define_entry_on_symbol_table( assembler_symbol_table_t **table, char *symbol, int value ){
 
-    assembler_symbol_table_t *table_ptr = table;
+    assembler_symbol_table_t *table_ptr = *table;
+    // assembler_symbol_table_t *prev_node = NULL;
 
     while ( table_ptr != NULL ){
         if ( !( strcmp( table_ptr->symbol, symbol ) ) ){
@@ -850,14 +850,14 @@ void define_entry_on_symbol_table( assembler_symbol_table_t *table, char *symbol
             table_ptr->value   = value;
 
 
-            return;
+            return table_ptr;
         }
+        // prev_node = table_ptr;
+        table_ptr = table_ptr->next;
     }
 
-
-
-
-
+    //NOTE: verificar possível problema de ponteiro.
+    return create_node_at_table_end( table, symbol, 1, value, 0, 0);
 
 }
 
@@ -938,9 +938,54 @@ int convert_token_to_int(char *sym){
 
 
 
+token_t * find_token_by_type(token_t *list, token_type type){
+
+    token_t *ptr = list;
+
+    while ( ptr != NULL ){
+        if ( ptr->type == type ) break;
+        ptr = ptr->next;
+    }
+
+    return ptr;
+}
 
 
+void save_defined_value_into_file(address_vector_t *vector, FILE *binary_ptr, int value){
 
+    address_vector_t *ptr = vector;
+    fpos_t eof_position;
+    int increment = 0;
+
+    fgetpos(binary_ptr, &eof_position);
+
+    while ( ptr != NULL ){
+        fseek( binary_ptr, (ptr->value * sizeof(int) ) , SEEK_SET);
+        fread( &increment, sizeof(int), 1, binary_ptr );
+        fseek( binary_ptr, (ptr->value * sizeof(int) ) , SEEK_SET);
+        value += increment;
+        fwrite( &value, sizeof(int), 1, binary_ptr );
+
+        ptr = ptr->next;
+    }
+
+    fsetpos(binary_ptr, &eof_position);
+}
+
+
+void parse_bin_file_to_text(FILE *txt, FILE *bin){
+
+    int temp;
+
+    rewind(bin);
+    while ( !( feof(bin) ) ){
+        if ( feof(bin) ) break;
+
+        fread( &temp, sizeof(int), 1, bin);
+        fprintf(txt, "%d ", temp);
+    }
+
+}
 
 
 

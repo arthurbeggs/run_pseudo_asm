@@ -33,7 +33,7 @@ int main(int argc, char const *argv[]) {
         *str_pointer = '\0';
 
 
-        pre_processamento(temp, ((int) argc > 2 ) ); // TODO: Retirar 2º parâmetro.
+        pre_processamento(temp);
         processa_macros(temp);
         montagem(temp, ( (int) argc > 2 ? 1 : 0 ));
 
@@ -47,11 +47,11 @@ int main(int argc, char const *argv[]) {
         *str_pointer = '\0';
         remove(strcat(temp, ".mcr.tmp"));
 
-        // Apaga arquivo *.o.tmp
-        strcpy(temp, argv[count]);
-        str_pointer = strstr(temp, ".asm");
-        *str_pointer = '\0';
-        remove(strcat(temp, ".o.tmp"));
+        // // Apaga arquivo *.o.tmp
+        // strcpy(temp, argv[count]);
+        // str_pointer = strstr(temp, ".asm");
+        // *str_pointer = '\0';
+        // remove(strcat(temp, ".o.tmp"));
     }
 
 

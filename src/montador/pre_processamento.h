@@ -13,15 +13,14 @@
 #include "functions.h"
 
 // Realiza o pré processamento do arquivo
-void pre_processamento(char const *source_file, int with_modules);
+void pre_processamento(char const *source_file);
 
 
-void pre_processamento(char const *source_file, int with_modules){
+void pre_processamento(char const *source_file){
 
     char temp_string[ MAX_IDENTIFIER_WIDTH + 5 ];
 
     token_t *token_list = NULL;
-    token_t *list_crawler = NULL;
 
     symbol_table_t *symbol_table = NULL;
 
@@ -69,31 +68,6 @@ void pre_processamento(char const *source_file, int with_modules){
 
         // Se a linha estiver vazia, lê a próxima linha.
         if ( token_list == NULL ) continue;
-
-
-        // Testa se o programa não tem módulos, mas tem diretiva BEGIN ou END
-        // TODO: Retirar daqui e colocar na montagem.
-        if ( !(with_modules) ) {
-            list_crawler = token_list;
-            while ( list_crawler != NULL ) {
-                if ( \
-                        (  list_crawler->type == directive ) \
-                    &&  (  !( strcmp(list_crawler->token_id, "BEGIN")) \
-                        || !( strcmp(list_crawler->token_id, "END") ) \
-                    ) \
-                ) {
-                    // Se o arquivo for standalone, mas possuir diretivas BEGIN ou END, exibe mensagem de erro, limpa a memória e encerra o programa com erro.
-                    printf( STANDALONE_AS_MODULE_ERR, source_file );
-                    erase_token_list(&token_list);
-                    erase_symbol_table(symbol_table);
-                    fclose (source_ptr);
-                    fclose (output_ptr);
-                    fclose (binary_ptr);
-                    exit(1);
-                }
-                list_crawler = list_crawler->next;
-            }
-        }
 
 
         // Testa se a linha tem uma diretiva EQU na posição esperada (2º token, antecedido de um label).

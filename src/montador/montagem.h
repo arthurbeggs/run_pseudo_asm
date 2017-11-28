@@ -22,15 +22,20 @@ void montagem(char const *source_file, int modularized){
 
     char temp_string[ MAX_IDENTIFIER_WIDTH + 5 ];
     token_t *token_list                     = NULL;
+    token_t *list_crawler                   = NULL;
     assembler_symbol_table_t *symbol_table  = NULL;
+    assembler_symbol_table_t *table_ptr     = NULL;
 
 
     int word_count = 0;
     int value;
+    int counter;
+    const int zero = 0;
 
     FILE *source_ptr; // Ponteiro do arquivo de saída do processamento da macro
     FILE *output_ptr; // Ponteiro do arquivo de saída do montador
     FILE *binary_ptr; // Ponteiro do arquivo binário temporário
+    //TODO: Fazer a merda do mapa de bits
 
 
     // Abre o arquivo com lista de tokens em modo leitura binária.
@@ -63,44 +68,91 @@ void montagem(char const *source_file, int modularized){
         erase_token_list(&token_list);
         retrieve_token_list_from_file(&token_list, source_ptr);
 
+        if ( feof(source_ptr) ) break;
+
+        // Testa se o programa não tem módulos, mas tem diretiva BEGIN ou END
+        if ( !(modularized) ) {
+            list_crawler = token_list;
+            while ( list_crawler != NULL ) {
+                if ( \
+                        (  list_crawler->type == directive ) \
+                    &&  (  !( strcmp(list_crawler->token_id, "BEGIN")) \
+                        || !( strcmp(list_crawler->token_id, "END") ) \
+                    ) \
+                ) {
+                    // Se o arquivo for standalone, mas possuir diretivas BEGIN ou END, exibe mensagem de erro, limpa a memória e encerra o programa com erro.
+                    printf( STANDALONE_AS_MODULE_ERR, source_file );
+                    erase_token_list(&token_list);
+                    // TODO: Apagar tabela de símbolos
+                    fclose (source_ptr);
+                    fclose (output_ptr);
+                    fclose (binary_ptr);
+                    exit(1);
+                }
+                list_crawler = list_crawler->next;
+            }
+        }
+
+
         if ( token_list->type == label ) {
-
-            define_entry_on_symbol_table( symbol_table, token_list->token_id,  word_count );
-
             if ( token_list->next->type == directive ) {
                 if ( !(strcmp(token_list->next->token_id, "SPACE") ) ) {
+                    table_ptr = define_entry_on_symbol_table( &symbol_table, token_list->token_id,  word_count );
+                    save_defined_value_into_file( table_ptr->address, binary_ptr, word_count );
 
+                    // Adicionar espaços em branco no arquivo
+                    if ( token_list->next->next != NULL ){
+                        value = convert_token_to_int(token_list->next->next->token_id);
+                    }
+                    else value = 0;
+                    for (counter = 0; ((counter < value) || (counter == 0)); counter++){
+                        fwrite( &zero, sizeof(int), 1, binary_ptr);
+                        word_count++;
+                    }
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "CONST") ) ) {
+                    table_ptr = define_entry_on_symbol_table( &symbol_table, token_list->token_id,  word_count );
+                    save_defined_value_into_file( table_ptr->address, binary_ptr, word_count );
 
+                    value = convert_token_to_int(token_list->next->next->token_id);
+                    fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "BEGIN") ) ) {
-
+                    table_ptr = define_entry_on_symbol_table( &symbol_table, token_list->token_id,  word_count );
+                    save_defined_value_into_file( table_ptr->address, binary_ptr, word_count );
+                    // NOTE: Talvez BEGIN precise indicar a posição inicial do arquivo.
                 }
 
                 else if ( !(strcmp(token_list->next->token_id, "EXTERN") ) ) {
-
+                    table_ptr = define_entry_on_symbol_table( &symbol_table, token_list->token_id,  0 );
+                    // save_defined_value_into_file( table_ptr->address, binary_ptr, 0 );
+                    table_ptr->extern_symbol = 1;
                 }
 
                 // Erro
                 else {
-
+                    printf( TIPO_DE_ARGUMENTO_INVALIDO, token_list->source_file_line );
+                    continue;
                 }
 
 
             }
 
             else if ( token_list->next->type == instruction ) {
+                table_ptr = define_entry_on_symbol_table( &symbol_table, token_list->token_id,  word_count );
+                save_defined_value_into_file( table_ptr->address, binary_ptr, word_count );
+
+
                 if ( !(strcmp(token_list->next->token_id, "ADD") ) ) {
                     value = 1;
                     fwrite( &value, sizeof(int), 1, binary_ptr);
 
                     word_count++;
 
-                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
-                    value += get_increment_value( token_list->next->next );
+                    value = check_symbol_table( &symbol_table, token_list->next->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
@@ -111,8 +163,8 @@ void montagem(char const *source_file, int modularized){
 
                     word_count++;
 
-                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
-                    value += get_increment_value( token_list->next->next );
+                    value = check_symbol_table( &symbol_table, token_list->next->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
@@ -123,8 +175,8 @@ void montagem(char const *source_file, int modularized){
 
                     word_count++;
 
-                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
-                    value += get_increment_value( token_list->next->next );
+                    value = check_symbol_table( &symbol_table, token_list->next->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
@@ -135,8 +187,8 @@ void montagem(char const *source_file, int modularized){
 
                     word_count++;
 
-                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
-                    value += get_increment_value( token_list->next->next );
+                    value = check_symbol_table( &symbol_table, token_list->next->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
@@ -147,8 +199,8 @@ void montagem(char const *source_file, int modularized){
 
                     word_count++;
 
-                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
-                    value += get_increment_value( token_list->next->next );
+                    value = check_symbol_table( &symbol_table, token_list->next->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
@@ -159,8 +211,8 @@ void montagem(char const *source_file, int modularized){
 
                     word_count++;
 
-                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
-                    value += get_increment_value( token_list->next->next );
+                    value = check_symbol_table( &symbol_table, token_list->next->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
@@ -171,8 +223,8 @@ void montagem(char const *source_file, int modularized){
 
                     word_count++;
 
-                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
-                    value += get_increment_value( token_list->next->next );
+                    value = check_symbol_table( &symbol_table, token_list->next->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
@@ -183,8 +235,8 @@ void montagem(char const *source_file, int modularized){
 
                     word_count++;
 
-                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
-                    value += get_increment_value( token_list->next->next );
+                    value = check_symbol_table( &symbol_table, token_list->next->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
@@ -195,15 +247,15 @@ void montagem(char const *source_file, int modularized){
 
                     word_count++;
 
-                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
-                    value += get_increment_value( token_list->next->next );
+                    value = check_symbol_table( &symbol_table, token_list->next->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
 
                     word_count++;
 
-                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
-                    value += get_increment_value( token_list->next->next );
+                    value = check_symbol_table( &symbol_table, (find_token_by_type(token_list, comma))->next->token_id, word_count );
+                    value += get_increment_value( (find_token_by_type(token_list, comma))->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
@@ -214,8 +266,8 @@ void montagem(char const *source_file, int modularized){
 
                     word_count++;
 
-                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
-                    value += get_increment_value( token_list->next->next );
+                    value = check_symbol_table( &symbol_table, token_list->next->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
@@ -226,8 +278,8 @@ void montagem(char const *source_file, int modularized){
 
                     word_count++;
 
-                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
-                    value += get_increment_value( token_list->next->next );
+                    value = check_symbol_table( &symbol_table, token_list->next->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
@@ -238,8 +290,8 @@ void montagem(char const *source_file, int modularized){
 
                     word_count++;
 
-                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
-                    value += get_increment_value( token_list->next->next );
+                    value = check_symbol_table( &symbol_table, token_list->next->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
@@ -250,8 +302,8 @@ void montagem(char const *source_file, int modularized){
 
                     word_count++;
 
-                    value = check_symbol_table( symbol_table, token_list->next->token_id, word_count );
-                    value += get_increment_value( token_list->next->next );
+                    value = check_symbol_table( &symbol_table, token_list->next->next->token_id, word_count );
+                    value += get_increment_value( token_list->next->next->next );
 
                     fwrite( &value, sizeof(int), 1, binary_ptr);
                 }
@@ -274,15 +326,15 @@ void montagem(char const *source_file, int modularized){
         }
 
         else if ( token_list->type == directive ) {
-            if ( !(strcmp(token_list->next->token_id, "SECTION") ) ) {
+            if ( !(strcmp(token_list->token_id, "SECTION") ) ) {
 
             }
 
-            else if ( !(strcmp(token_list->next->token_id, "END") ) ) {
+            else if ( !(strcmp(token_list->token_id, "END") ) ) {
 
             }
 
-            else if ( !(strcmp(token_list->next->token_id, "PUBLIC") ) ) {
+            else if ( !(strcmp(token_list->token_id, "PUBLIC") ) ) {
 
             }
 
@@ -301,8 +353,8 @@ void montagem(char const *source_file, int modularized){
 
                 word_count++;
 
-                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
-                value += get_increment_value( token_list->next );
+                value = check_symbol_table( &symbol_table, token_list->next->token_id, word_count );
+                value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
             }
@@ -313,8 +365,8 @@ void montagem(char const *source_file, int modularized){
 
                 word_count++;
 
-                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
-                value += get_increment_value( token_list->next );
+                value = check_symbol_table( &symbol_table, token_list->next->token_id, word_count );
+                value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
             }
@@ -325,8 +377,8 @@ void montagem(char const *source_file, int modularized){
 
                 word_count++;
 
-                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
-                value += get_increment_value( token_list->next );
+                value = check_symbol_table( &symbol_table, token_list->next->token_id, word_count );
+                value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
             }
@@ -337,8 +389,8 @@ void montagem(char const *source_file, int modularized){
 
                 word_count++;
 
-                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
-                value += get_increment_value( token_list->next );
+                value = check_symbol_table( &symbol_table, token_list->next->token_id, word_count );
+                value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
             }
@@ -349,8 +401,8 @@ void montagem(char const *source_file, int modularized){
 
                 word_count++;
 
-                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
-                value += get_increment_value( token_list->next );
+                value = check_symbol_table( &symbol_table, token_list->next->token_id, word_count );
+                value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
             }
@@ -361,8 +413,8 @@ void montagem(char const *source_file, int modularized){
 
                 word_count++;
 
-                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
-                value += get_increment_value( token_list->next );
+                value = check_symbol_table( &symbol_table, token_list->next->token_id, word_count );
+                value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
             }
@@ -373,8 +425,8 @@ void montagem(char const *source_file, int modularized){
 
                 word_count++;
 
-                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
-                value += get_increment_value( token_list->next );
+                value = check_symbol_table( &symbol_table, token_list->next->token_id, word_count );
+                value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
             }
@@ -385,8 +437,8 @@ void montagem(char const *source_file, int modularized){
 
                 word_count++;
 
-                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
-                value += get_increment_value( token_list->next );
+                value = check_symbol_table( &symbol_table, token_list->next->token_id, word_count );
+                value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
             }
@@ -397,15 +449,15 @@ void montagem(char const *source_file, int modularized){
 
                 word_count++;
 
-                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
-                value += get_increment_value( token_list->next );
+                value = check_symbol_table( &symbol_table, token_list->next->token_id, word_count );
+                value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
 
                 word_count++;
 
-                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
-                value += get_increment_value( token_list->next );
+                value = check_symbol_table( &symbol_table, (find_token_by_type(token_list, comma))->next->token_id, word_count );
+                value += get_increment_value( (find_token_by_type(token_list, comma))->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
             }
@@ -416,8 +468,8 @@ void montagem(char const *source_file, int modularized){
 
                 word_count++;
 
-                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
-                value += get_increment_value( token_list->next );
+                value = check_symbol_table( &symbol_table, token_list->next->token_id, word_count );
+                value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
             }
@@ -428,8 +480,8 @@ void montagem(char const *source_file, int modularized){
 
                 word_count++;
 
-                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
-                value += get_increment_value( token_list->next );
+                value = check_symbol_table( &symbol_table, token_list->next->token_id, word_count );
+                value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
             }
@@ -440,8 +492,8 @@ void montagem(char const *source_file, int modularized){
 
                 word_count++;
 
-                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
-                value += get_increment_value( token_list->next );
+                value = check_symbol_table( &symbol_table, token_list->next->token_id, word_count );
+                value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
             }
@@ -452,8 +504,8 @@ void montagem(char const *source_file, int modularized){
 
                 word_count++;
 
-                value = check_symbol_table( symbol_table, token_list->token_id, word_count );
-                value += get_increment_value( token_list->next );
+                value = check_symbol_table( &symbol_table, token_list->next->token_id, word_count );
+                value += get_increment_value( token_list->next->next );
 
                 fwrite( &value, sizeof(int), 1, binary_ptr);
             }
@@ -479,7 +531,11 @@ void montagem(char const *source_file, int modularized){
 
     }
 
+    parse_bin_file_to_text(output_ptr, binary_ptr);
 
+
+    erase_token_list(&token_list);
+    // TODO: Apagar tabela de símbolos;
     fclose (source_ptr);
     fclose (output_ptr);
     fclose (binary_ptr);
