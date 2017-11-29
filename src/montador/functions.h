@@ -1018,6 +1018,41 @@ void parse_bitmap_to_text(FILE *txt, FILE *bin){
 
 }
 
+void print_public_symbols_into_file(assembler_symbol_table_t *table, FILE *file){
+
+    assembler_symbol_table_t *temp = table;
+
+    while ( temp != NULL ){
+        if ( temp->public_symbol == 1 ){
+            fprintf( file, "\nTD: %s %d", temp->symbol, temp->value );
+        }
+
+        temp = temp->next;
+    }
+
+}
+
+void print_usage_table_into_file(assembler_symbol_table_t *table, FILE *file) {
+
+    assembler_symbol_table_t *temp  = table;
+    address_vector_t *vec_index     = NULL;
+
+
+    while ( temp != NULL ){
+        if ( temp->extern_symbol == 1 ){
+            fprintf(file, "\nTU: %s", temp->symbol);
+            vec_index = temp->address;
+            while ( vec_index != NULL ){
+                fprintf(file, " %d", vec_index->value);
+
+                vec_index = vec_index->next;
+            }
+        }
+
+        temp = temp->next;
+    }
+}
+
 
 
 // #endif precisa ser a última linha

@@ -79,6 +79,7 @@ void processa_macros(char const *source_file){
 
         // Testa se a linha atual é uma declaração de section
         if (   ( token_list->type == directive ) \
+            &&  ( token_list->next != NULL ) \
             &&  ( token_list->next->type == directive ) \
             && !( strcmp(token_list->token_id, "SECTION") ) \
         ) {

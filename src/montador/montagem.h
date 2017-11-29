@@ -662,9 +662,9 @@ void montagem(char const *source_file, int modularized){
     fprintf(output_ptr, "H: ");
     parse_bitmap_to_text(output_ptr, tempfile_ptr);
 
-    fprintf(output_ptr, "\nTU: ");
+    print_usage_table_into_file(symbol_table, output_ptr);
 
-    fprintf(output_ptr, "\nTD: ");
+    print_public_symbols_into_file(symbol_table, output_ptr);
 
     fprintf(output_ptr, "\nT:");
     parse_bin_file_to_text(output_ptr, binary_ptr);
