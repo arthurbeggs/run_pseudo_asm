@@ -24,7 +24,9 @@
 *************************************************************\n"
 
 
-#define STANDALONE_AS_MODULE_ERR "[ERRO] O arquivo %s.asm não possui módulos, mas possui diretivas BEGIN e/ou END. O programa será encerrado.\n\n"
+#define STANDALONE_AS_MODULE_ERR "[ERRO] O arquivo %s.asm não é modular, mas possui diretivas BEGIN e/ou END. O programa será encerrado.\n\n"
+
+#define MODULE_AS_STANDALONE_ERR "[ERRO] O arquivo %s.asm é modular, mas não possui diretivas BEGIN e/ou END. O programa será encerrado.\n\n"
 
 
 #define SYMBOL_NOT_DECLARED "[ERRO SEMÂNTICO] Uso de símbolo indefinido na linha %d.\n" //declarações e rótulos ausentes;

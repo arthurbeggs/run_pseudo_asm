@@ -840,7 +840,6 @@ int check_symbol_table( assembler_symbol_table_t **table, char *symbol, int addr
 assembler_symbol_table_t * define_entry_on_symbol_table( assembler_symbol_table_t **table, char *symbol, int value ){
 
     assembler_symbol_table_t *table_ptr = *table;
-    // assembler_symbol_table_t *prev_node = NULL;
 
     while ( table_ptr != NULL ){
         if ( !( strcmp( table_ptr->symbol, symbol ) ) ){
@@ -850,12 +849,29 @@ assembler_symbol_table_t * define_entry_on_symbol_table( assembler_symbol_table_
 
             return table_ptr;
         }
-        // prev_node = table_ptr;
         table_ptr = table_ptr->next;
     }
 
     return create_node_at_table_end( table, symbol, 1, value, 0, 0);
 
+}
+
+void set_table_symbol_as_public( assembler_symbol_table_t **table, char *symbol) {
+
+    assembler_symbol_table_t *table_ptr = *table;
+
+    while ( table_ptr != NULL ){
+        if ( !( strcmp( table_ptr->symbol, symbol ) ) ){
+            table_ptr->public_symbol = 1;
+
+            return;
+        }
+        table_ptr = table_ptr->next;
+    }
+
+    create_node_at_table_end( table, symbol, 0, 0, 1, 0);
+
+    return;
 }
 
 
@@ -978,11 +994,29 @@ void parse_bin_file_to_text(FILE *txt, FILE *bin){
     while ( !( feof(bin) ) ){
         fread( &temp, sizeof(int), 1, bin);
         if ( feof(bin) ) break;
-        fprintf(txt, "%d ", temp);
+        fprintf(txt, " %d", temp);
     }
 
 }
 
+
+void add_char_to_bitmap(char bit, FILE *file){
+    fwrite( &bit, sizeof(char), 1, file );
+}
+
+
+void parse_bitmap_to_text(FILE *txt, FILE *bin){
+
+    char temp;
+
+    rewind(bin);
+    while ( !( feof(bin) ) ){
+        fread( &temp, sizeof(char), 1, bin);
+        if ( feof(bin) ) break;
+        fprintf(txt, "%c", temp);
+    }
+
+}
 
 
 

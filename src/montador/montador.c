@@ -47,11 +47,11 @@ int main(int argc, char const *argv[]) {
         *str_pointer = '\0';
         remove(strcat(temp, ".mcr.tmp"));
 
-        // // Apaga arquivo *.o.tmp
-        // strcpy(temp, argv[count]);
-        // str_pointer = strstr(temp, ".asm");
-        // *str_pointer = '\0';
-        // remove(strcat(temp, ".o.tmp"));
+        // Apaga arquivo *.o.tmp
+        strcpy(temp, argv[count]);
+        str_pointer = strstr(temp, ".asm");
+        *str_pointer = '\0';
+        remove(strcat(temp, ".o.tmp"));
     }
 
 
