@@ -1054,6 +1054,31 @@ void print_usage_table_into_file(assembler_symbol_table_t *table, FILE *file) {
 }
 
 
+void erase_address_vector(address_vector_t **vector){
+
+    address_vector_t *temp;
+
+    while ( *vector != NULL ){
+        temp = *vector;
+        *vector = (*vector)->next;
+        free(temp);
+    }
+}
+
+void erase_assembler_symbol_table(assembler_symbol_table_t **table){
+
+    assembler_symbol_table_t *temp;
+
+    while ( *table ) {
+        temp = *table;
+        erase_address_vector(&((*table)->address));
+        *table = (*table)->next;
+        free(temp);
+    }
+
+}
+
+
 
 // #endif precisa ser a última linha
 #endif

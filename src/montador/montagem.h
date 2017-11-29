@@ -635,7 +635,7 @@ void montagem(char const *source_file, int modularized){
         if ( ( has_begin != 0 ) || ( has_end != 0 ) ) {
             // Se o arquivo for standalone, mas possuir diretivas BEGIN ou END, exibe mensagem de erro, limpa a memória e encerra o programa com erro.
             printf( STANDALONE_AS_MODULE_ERR, source_file );
-            // TODO: Apagar tabela de símbolos
+            erase_assembler_symbol_table(&symbol_table);
             fclose (source_ptr);
             fclose (output_ptr);
             fclose (binary_ptr);
@@ -646,7 +646,7 @@ void montagem(char const *source_file, int modularized){
         if ( ( has_begin != 1 ) || ( has_end != 1 ) ) {
             // Se o arquivo não for standalone, mas não possuir diretivas BEGIN e END, exibe mensagem de erro, limpa a memória e encerra o programa com erro.
             printf( MODULE_AS_STANDALONE_ERR, source_file );
-            // TODO: Apagar tabela de símbolos
+            erase_assembler_symbol_table(&symbol_table);
             fclose (source_ptr);
             fclose (output_ptr);
             fclose (binary_ptr);
@@ -671,7 +671,7 @@ void montagem(char const *source_file, int modularized){
 
 
     erase_token_list(&token_list);
-    // TODO: Apagar tabela de símbolos
+    erase_assembler_symbol_table(&symbol_table);
     fclose (tempfile_ptr);
     fclose (source_ptr);
     fclose (output_ptr);
