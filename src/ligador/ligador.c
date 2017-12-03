@@ -18,6 +18,8 @@ int main(int argc, char const *argv[]) {
     char module_name[3][ MAX_IDENTIFIER_WIDTH + 1 ];
     char *module_reloc[3];
     FILE *source_ptr[3];
+    usage_table_t *usage_table[3] = { NULL };
+    definition_table_t *def_table[3] = { NULL };
 
 
     // Outras variáveis
@@ -42,6 +44,8 @@ int main(int argc, char const *argv[]) {
         read_file_size_from_header( &module_size[ iterator ], source_ptr[ iterator ] );
 
         read_bitstream_from_header( &module_reloc[ iterator ], module_size[ iterator ], source_ptr[ iterator ] );
+
+        reconstruct_symbol_tables( &usage_table[ iterator ], &def_table[ iterator ], source_ptr[ iterator ] );
     }
 
     while ( iterator < 3 ){
@@ -49,6 +53,8 @@ int main(int argc, char const *argv[]) {
         *module_name[ iterator ]    = '\0';
         module_reloc[ iterator ]    = NULL;
         source_ptr[ iterator ]      = NULL;
+        usage_table[ iterator ]     = NULL;
+        def_table[ iterator ]       = NULL;
         iterator++;
     }
 
@@ -60,6 +66,7 @@ int main(int argc, char const *argv[]) {
         fclose( source_ptr[ iterator ] );
     }
 
+    // TODO: Liberar memória das tabelas e bitstream de relocação.
 
     return 0;
 }

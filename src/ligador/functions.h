@@ -83,12 +83,20 @@ void read_file_size_from_header(int *size, FILE *file_ptr);
 void read_bitstream_from_header(char **string, int size, FILE *file_ptr);
 
 
-// Gera tabela de uso
+// Reconstrói tabelas de uso e de definição
+void reconstruct_symbol_tables(usage_table_t **usage, definition_table_t **definition, FILE *file_ptr);
 
 
+// Adiciona entrada ao final da tabela de uso
+void insert_usage_entry(usage_table_t **table, FILE *file_ptr);
 
-// Gera tabela de definição
 
+// Adiciona entrada ao final da tabela de definição
+void insert_definition_entry(definition_table_t **table, FILE *file_ptr);
+
+
+// Adiciona entrada ao final do vetor de endereços
+void insert_address_entry(address_vector_t **vector, int value);
 
 
 ////////////////////
@@ -140,6 +148,103 @@ void read_bitstream_from_header(char **string, int size, FILE *file_ptr){
     fscanf(file_ptr, " %[^\n]", *string);
     fscanf(file_ptr, "%*1[\n]");
 }
+
+
+// Reconstrói tabelas de uso e de definição
+void reconstruct_symbol_tables(usage_table_t **usage, definition_table_t **definition, FILE *file_ptr){
+
+    char header_label[3];
+
+    while ( 1 ){
+        fscanf(file_ptr, "%2[^:]", header_label);
+        fscanf(file_ptr, "%*[ :]");
+
+        if ( !( strcmp(header_label, "TU") ) ) {
+            insert_usage_entry( usage, file_ptr );
+        }
+        else if ( !( strcmp(header_label, "TD") ) ) {
+            insert_definition_entry( definition, file_ptr );
+        }
+        else break;
+    }
+}
+
+
+// Adiciona entrada ao final da tabela de uso
+void insert_usage_entry(usage_table_t **table, FILE *file_ptr){
+
+    int value;
+
+    usage_table_t *temp        = NULL;
+    usage_table_t *new_node    = (usage_table_t*) malloc(sizeof(usage_table_t));
+
+    fscanf(file_ptr, "%100[^\n ]", new_node->symbol);
+    new_node->next      = NULL;
+    new_node->address   = NULL;
+
+
+    if ( *table == NULL ) {
+        *table = new_node;
+    }
+
+    else {
+        temp = *table;
+        while ( temp->next != NULL ) temp = temp->next;
+        temp->next = new_node;
+    }
+
+    while ( fscanf(file_ptr, " %d", &value) ){
+        insert_address_entry( &(new_node->address), value );
+    }
+
+}
+
+
+// Adiciona entrada ao final da tabela de definição
+void insert_definition_entry(definition_table_t **table, FILE *file_ptr){
+
+    definition_table_t *temp        = NULL;
+    definition_table_t *new_node    = (definition_table_t*) malloc(sizeof(definition_table_t));
+
+    fscanf(file_ptr, "%100[^\n ]", new_node->symbol);
+    fscanf(file_ptr, " %d", &(new_node->value));
+    fscanf(file_ptr, "%*1[\n]");
+    new_node->next = NULL;
+
+    if ( *table == NULL ) {
+        *table = new_node;
+    }
+
+    else {
+        temp = *table;
+        while ( temp->next != NULL ) temp = temp->next;
+        temp->next = new_node;
+    }
+    return;
+
+}
+
+
+// Adiciona entrada ao final do vetor de endereços
+void insert_address_entry(address_vector_t **vector, int value){
+
+    address_vector_t *temp      = NULL;
+    address_vector_t *new_node  = (address_vector_t*) malloc(sizeof(address_vector_t));
+
+    new_node->value = value;
+    new_node->next  = NULL;
+
+    if ( *vector == NULL ){
+        *vector = new_node;
+    }
+
+    else {
+        temp = *vector;
+        while ( temp->next != NULL ) temp = temp->next;
+        temp->next = new_node;
+    }
+}
+
 
 
 
