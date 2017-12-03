@@ -127,7 +127,7 @@ int main(int argc, char *argv[]){
 
       case 12 :
         printf("INPUT\n");
-        scanf("%d", &ainput;
+        scanf("%d", &input;
         v[i+1] = input;
       break;
 
