@@ -1,22 +1,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
 
 #define WORDS 4
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
   FILE *arq;
   int qnt_words;
-  int i, inst;
+  int i,j, inst, input, ACC, PC;
   int *v;
-  char h, c, dois;
+  
 
   // Abre um arquivo arquivo para leitura
   arq =fopen(argv[1], "rt");
-  if (arq == NULL)  // Se houve erro na abertura
-  {
+  if (arq == NULL){
      printf("Não foi possível abrir o arquivo \n");
      exit(1);
   }
@@ -56,69 +57,94 @@ int main(int argc, char *argv[])
     {
       case 1 :
         printf("ADD\n");
+        j = v[i+1];
+        a = v[j];
+        ACC = ACC + a;
       break;
 
       case 2 :
         printf("SUB\n");
+        j = v[i+1];
+        a = v[j];
+        ACC = ACC - a;
       break;
 
       case 3 :
         printf("MULT\n");
+        j = v[i+1];
+        a = v[j];
+        ACC = ACC * a;
       break;
 
       case 4 :
         printf("DIV\n");
+        j = v[i+1];
+        a = v[j];
+        ACC = ACC / a;
       break;
 
       case 5 :
         printf("JMP\n");
+        PC = v[i+1];
       break;
 
       case 6 :
         printf("JMPN\n");
+        if (ACC<0){
+          PC = v[i+1];
+        }
       break;
 
       case 7 :
         printf("JMPP\n");
+        if (ACC>0){
+          PC = v[i+1];
+        }
       break;
 
       case 8 :
         printf("JMPZ\n");
+        if (ACC=0){
+          PC = v[i+1];
+          //i = PC;
+        }
       break;
 
       case 9 :
         printf("COPY\n");
+        v[i+1] = v[i+2];
       break;
 
       case 10 :
         printf("LOAD\n");
+        ACC = v[i+1];
       break;
 
       case 11 :
         printf("STORE\n");
+        v[i+1] = ACC;
       break;
 
       case 12 :
         printf("INPUT\n");
+        scanf("%d", &ainput;
+        v[i+1] = input;
       break;
 
       case 13 :
         printf("OUTPUT\n");
+        printf("%d\n", v[i+1] );
       break;
 
       case 14 :
         printf("STOP\n");
       break;
-
-        
-
-
     }
-
-  } 
-
+}
 
 
+
+  
 
 
 
@@ -128,3 +154,4 @@ int main(int argc, char *argv[])
   return 0;
     
 }
+
