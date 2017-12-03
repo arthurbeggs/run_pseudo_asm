@@ -13,6 +13,52 @@
 
 int main(int argc, char const *argv[]) {
 
+    // Informações retiradas dos arquivos
+    int  module_size[3];
+    char module_name[3][ MAX_IDENTIFIER_WIDTH + 1 ];
+    char *module_reloc[3];
+    FILE *source_ptr[3];
+
+
+    // Outras variáveis
+    int iterator;
+
+
+    if ( invalid_arguments(argc, argv) ){
+        exit(1);
+    }
+
+
+    for ( iterator = 0 ; ( iterator < (argc - 1) ) ; iterator++ ){
+
+        source_ptr[ iterator ] = fopen(argv[ iterator + 1 ], "r");
+        if ( source_ptr[ iterator ] == NULL ){
+            printf("\n Houve um erro ao abrir o arquivo %s !\n", argv[ iterator + 1 ]);
+            exit(1);
+        }
+
+        read_file_name_from_header( module_name[ iterator ], source_ptr[ iterator ] );
+
+        read_file_size_from_header( &module_size[ iterator ], source_ptr[ iterator ] );
+
+        read_bitstream_from_header( &module_reloc[ iterator ], module_size[ iterator ], source_ptr[ iterator ] );
+    }
+
+    while ( iterator < 3 ){
+        module_size[ iterator ]     = 0;
+        *module_name[ iterator ]    = '\0';
+        module_reloc[ iterator ]    = NULL;
+        source_ptr[ iterator ]      = NULL;
+        iterator++;
+    }
+
+
+
+
+
+    for ( iterator = 0 ; ( iterator < (argc - 1) ) ; iterator++ ){
+        fclose( source_ptr[ iterator ] );
+    }
 
 
     return 0;
