@@ -17,46 +17,44 @@ int main(int argc, char const *argv[]) {
 
     // Guarda nome do arquivo temporário para ser possível excluí-lo.
     char temp[ MAX_IDENTIFIER_WIDTH + 10 ];
+    char *str_pointer;
 
-    if ( valid_command(argc, argv) ){           // Teste de argumentos
+    int count;
+
+    if ( !(valid_command(argc, argv)) ){        // Teste de argumentos
         return 1;
     }
 
-    if ( !(strcmp(argv[1], "-p")) ){       // Pré-processamento
-        pre_processamento(argv[2], argv[3]);
+    for ( count = 1 ; count < argc ; count++ ) {
+
+        // Copia o nome do arquivo para temp e retira a extensão ".asm"
+        strcpy(temp, argv[count]);
+        str_pointer = strstr(temp, ".asm");
+        *str_pointer = '\0';
+
+
+        pre_processamento(temp);
+        processa_macros(temp);
+        montagem(temp, ( (int) argc > 2 ? 1 : 0 ));
+
 
         // Apaga arquivo *.pre.tmp
-        strcpy(temp, argv[3]);
-        remove(strcat(temp, ".pre.tmp"));
-    }
-
-    else if ( !(strcmp(argv[1], "-m")) ) { // Expansão de macros
-        pre_processamento(argv[2], argv[3]);
-        processa_macros(argv[3]);
-
-        // Apaga arquivo *.pre.tmp
-        strcpy(temp, argv[3]);
         remove(strcat(temp, ".pre.tmp"));
 
-        // Apaga arquivo *.mnt.tmp
-        strcpy(temp, argv[3]);
+        // Apaga arquivo *.mcr.tmp
+        strcpy(temp, argv[count]);
+        str_pointer = strstr(temp, ".asm");
+        *str_pointer = '\0';
         remove(strcat(temp, ".mcr.tmp"));
+
+        // Apaga arquivo *.o.tmp
+        strcpy(temp, argv[count]);
+        str_pointer = strstr(temp, ".asm");
+        *str_pointer = '\0';
+        remove(strcat(temp, ".o.tmp"));
     }
 
-    else {                                      // Montagem
-        pre_processamento(argv[2], argv[3]);
-        processa_macros(argv[3]);
-        montagem(argv[3]);
 
-        // // Apaga arquivo *.pre.tmp
-        // strcpy(temp, argv[3]);
-        // remove(strcat(temp, ".pre.tmp"));
-
-        // // Apaga arquivo *.mnt.tmp
-        // strcpy(temp, argv[3]);
-        // remove(strcat(temp, ".mcr.tmp"));
-
-    }
 
 
     return 0;

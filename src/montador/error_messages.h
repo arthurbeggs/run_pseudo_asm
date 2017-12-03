@@ -17,26 +17,21 @@
 *************************************************************\n\n\
                     Argumentos inválidos!\n\n\
   Modo de uso:\n\
-   > %s -p <source_file> <output_file>\n\
-     Pré-processamento do código.\n\
-       - <source_file> deve ter extensão .asm;\n\
-       - <output_file> deve ter extensão .o;\n\
-       - <output_file> será concatenado com a \
-extensão .pre .\n\n\
-   > %s -m <source_file> <output_file>\n\
-     Processamento de macros.\n\
-       - <source_file> deve ter extensão .asm;\n\
-       - <output_file> deve ter extensão .o;\n\
-       - <output_file> será concatenado com a \
-extensão .mcr .\n\n\
-   > %s -o <source_file> <output_file>\n\
+   > %s <source_file> ...\n\
      Realiza a montagem do código.\n\
-       - <source_file> deve ter extensão .asm;\n\
-       - <output_file> deve ter extensão .o . \n\n\
+     Podem ser fornecidos de 1 a 3 <source_file> com extensão \".asm\".\n\n\
+                  A execução será abortada!\n\n\
 *************************************************************\n"
 
 
+#define STANDALONE_AS_MODULE_ERR "[ERRO] O arquivo %s.asm não é modular, mas possui diretivas BEGIN e/ou END. O programa será encerrado.\n\n"
+
+#define MODULE_AS_STANDALONE_ERR "[ERRO] O arquivo %s.asm é modular, mas não possui diretivas BEGIN e/ou END. O programa será encerrado.\n\n"
+
+
 #define SYMBOL_NOT_DECLARED "[ERRO SEMÂNTICO] Uso de símbolo indefinido na linha %d.\n" //declarações e rótulos ausentes;
+
+#define INVALID_TOKEN_AT_LINE_START "[ERRO] O token %s não é válido como primeiro token de uma linha pós-processada. A linha será ignorada.\n"
 
 
 #define SYMBOL_REDEFINED "[ERRO SEMÂNTICO] Símbolo redefinido na linha %d. O valor definido anteriormente foi sobrescrito.\n"

@@ -16,10 +16,10 @@
 
 
 // Substitui as macros
-void processa_macros(char const *output_file);
+void processa_macros(char const *source_file);
 
 
-void processa_macros(char const *output_file){
+void processa_macros(char const *source_file){
 
     //Passos dessa função:
     // 1 - Abre arquvo binario de saída do pre_processamento
@@ -28,7 +28,7 @@ void processa_macros(char const *output_file){
     // 4 - Na section text: Verifica se é macro ou não. Se for, guarda o nome na MNT e o código na MDT.
     // 5 - Verifica se é chamada de macro ou definição de macro. Se definição,  realiza passo 4. Se não, verifica se a macro está definida na MNT e     substitue a linha pelo corpo da macro.
 
-    char macro_output_file[ MAX_IDENTIFIER_WIDTH + 5 ];
+    char temp_string[ MAX_IDENTIFIER_WIDTH + 5 ];
 
     // Identificam se o arquivo já chegou nas seções de dados ou texto.
     int inside_text_section, inside_data_section;
@@ -46,26 +46,26 @@ void processa_macros(char const *output_file){
     FILE *output_ptr; // Ponteiro do arquivo de saída do processamento da macro
 
 
-    strcpy(macro_output_file, output_file);
-    source_ptr = fopen(strcat(macro_output_file, ".pre.tmp"), "rb"); // Abre o arquivo de entrada em modo leitura binária.
-
+    // Abre o arquivo com lista de tokens em modo leitura binária.
+    strcpy(temp_string, source_file);
+    strcat(temp_string, ".pre.tmp");
+    source_ptr = fopen(temp_string, "rb");
     if ( source_ptr == NULL ){
-        printf("\n Houve um erro ao abrir o arquivo %s !\n", macro_output_file);
+        printf("\n Houve um erro ao abrir o arquivo %s !\n", temp_string);
         exit(1);
     }
 
-
-    strcpy(macro_output_file, output_file);
-    output_ptr = fopen(strcat(macro_output_file, ".mcr"), "w"); // Cria o arquivo de saída com o nome dado pelo usuário.
-
+    // Cria o arquivo de saída em modo escrita.
+    strcpy(temp_string, source_file);
+    strcat(temp_string, ".mcr");
+    output_ptr = fopen(temp_string, "w");
     if ( output_ptr == NULL ){
-        printf("\n Houve um erro ao criar o arquivo %s !\n", macro_output_file);
+        printf("\n Houve um erro ao criar o arquivo %s !\n", temp_string);
         exit(1);
     }
 
-
-    binary_ptr = fopen(strcat(macro_output_file, ".tmp"), "wb"); // Cria o arquivo intermediário com o nome dado pelo usuário.
-
+    // Cria o arquivo intermediário em modo de escrita binária.
+    binary_ptr = fopen(strcat(temp_string, ".tmp"), "wb");
     if ( binary_ptr == NULL ){
         printf("\n Houve um erro ao criar o arquivo temporário! \n");
         exit(1);
@@ -79,18 +79,19 @@ void processa_macros(char const *output_file){
 
         // Testa se a linha atual é uma declaração de section
         if (   ( token_list->type == directive ) \
+            &&  ( token_list->next != NULL ) \
             &&  ( token_list->next->type == directive ) \
-            && !( strcmp(token_list->token_identifier, "SECTION") ) \
+            && !( strcmp(token_list->token_id, "SECTION") ) \
         ) {
 
             // Seção DATA
-            if ( !( strcmp(token_list->next->token_identifier, "DATA") ) ) {
+            if ( !( strcmp(token_list->next->token_id, "DATA") ) ) {
                 inside_data_section = 1;
                 inside_text_section = 0;
             }
 
             // Seção TEXT
-            else if ( !( strcmp(token_list->next->token_identifier, "TEXT") ) ) {
+            else if ( !( strcmp(token_list->next->token_id, "TEXT") ) ) {
                 inside_text_section = 1;
                 inside_data_section = 0;
             }
@@ -106,18 +107,18 @@ void processa_macros(char const *output_file){
         else if  (  ( inside_text_section ) \
             && ( token_list->type == label ) \
             && ( token_list->next->type == directive ) \
-            && ( !( strcmp(token_list->next->token_identifier, "MACRO") ) )
+            && ( !( strcmp(token_list->next->token_id, "MACRO") ) )
         ){
 
             if ( insert_label_into_macro_name_table( \
                     &macro_table, \
-                    token_list->token_identifier, \
+                    token_list->token_id, \
                     &temp ) \
             ) {
                 printf( MACRO_REDEFINED, token_list->source_file_line );
 
-                // Apaga macro sem colocá-la na dabela de definições
-                while ( !!( strcmp(token_list->token_identifier, "END") ) ){
+                // Apaga macro sem colocá-la na tabela de definições
+                while ( !!( strcmp(token_list->token_id, "ENDMACRO") ) ){
                     erase_token_list(&token_list);
                     retrieve_token_list_from_file(&token_list, source_ptr);
 
@@ -132,11 +133,11 @@ void processa_macros(char const *output_file){
                 goto case_break;
             }
 
-            while ( !!( strcmp(token_list->token_identifier, "END") ) ){
+            while ( !!( strcmp(token_list->token_id, "ENDMACRO") ) ){
                 token_list = NULL;
                 retrieve_token_list_from_file(&token_list, source_ptr);
 
-                if ( ( !( strcmp(token_list->token_identifier, "END") ) ) ) {
+                if ((!( strcmp(token_list->token_id, "ENDMACRO")) )) {
                     erase_token_list(&token_list);
                     break;
                 }
@@ -152,7 +153,7 @@ void processa_macros(char const *output_file){
 
         // Substitui macro
         else if ( token_list->type == symbol ) {
-            retrieve_macro_from_table( &macro_table, token_list->token_identifier, &temp );
+            retrieve_macro_from_table( &macro_table, token_list->token_id, &temp );
             if ( temp != NULL ){
                 define_ptr = temp->definition;
 

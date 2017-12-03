@@ -31,7 +31,7 @@ typedef enum { undefined = 0, label, instruction, directive, symbol, number, com
 
 
 typedef struct token_t{
-    char token_identifier[ MAX_IDENTIFIER_WIDTH +1 ];
+    char token_id[ MAX_IDENTIFIER_WIDTH +1 ];
     token_type type;        // Tipo do token;
     int source_file_line;   // Linha do arquivo original;
     int output_file_byte;   // Posição de memoria no arquivo de saída;
@@ -54,25 +54,35 @@ typedef struct macro_def_table_t{
 
 
 typedef struct macro_name_table_t{
-    char symbol[ MAX_IDENTIFIER_WIDTH + 1 ]; //nome da macro (label da macro)
+    char symbol[ MAX_IDENTIFIER_WIDTH + 1 ]; // Nome da macro (label da macro)
     struct macro_def_table_t *definition;
     struct macro_name_table_t *next;   // Ponteiro para a proxima linha da mnt;
 }macro_name_table_t;
 
 
-typedef struct assemble_symble_table_t{
-    char name_symble[ MAX_IDENTIFIER_WIDTH +1 ];
-    int define;  // Diz se o simbolo já foi definido ou não. Comtem 0 se false e 1 se true;
-    int value;   //endereço do símbolo
-    token_t *list_of_use; //lista que contem os endereços em que os símbolos foram usados, para os simbolos ainda não definidos;
-    struct assemble_symble_table_t *next;   // Ponteiro para a proxima linha da tabela;
-}assemble_symble_table_t;
+typedef struct address_vector_t{
+    int value;
+    struct address_vector_t *next;
+}address_vector_t;
+
+
+typedef struct assembler_symbol_table_t{
+    char symbol[ MAX_IDENTIFIER_WIDTH + 1 ];
+    int  defined;            // Diz se o simbolo já foi definido ou não
+    int  value;              // Endereço do símbolo
+    int  public_symbol;
+    int  extern_symbol;
+    struct address_vector_t *address;
+    struct assembler_symbol_table_t *next;   // Proxima linha da tabela
+}assembler_symbol_table_t;
+
 
 
 // Protótipos de funções
 
 
 // Avalia se os argumentos passados ao programa estão corretos.
+// Retorna 0 se os argumentos passados não estiverem corretos. Se estiverem, retorna 1.
 int valid_command(int, char const **);
 
 
@@ -178,26 +188,55 @@ void retrieve_macro_from_table( macro_name_table_t **macro_table, char *symbol, 
 void erase_macro_table( macro_name_table_t **macro_table );
 
 
+// Apaga a tabela de símbolos de montagem, liberando memória
+void erase_assembler_symbol_table( assembler_symbol_table_t **symbol_table );
+
+
+// Procura se símbolo existe na tabela.
+// Retorna o endereço do símbolo já definido ou 0 apra símbolo não definido.
+int check_symbol_table( assembler_symbol_table_t **table, char *symbol, int address );
+
+
+assembler_symbol_table_t * define_entry_on_symbol_table( assembler_symbol_table_t **table, char *symbol, int value );
+
+
+// Cria novo nó na tabela de símbolos.
+// Retorna o nó criado.
+assembler_symbol_table_t * create_node_at_table_end(assembler_symbol_table_t **table, char *symbol, int defined, int value, int public_symbol, int extern_symbol);
+
+
+// Cria novo nó no vetor de endereços.
+void create_node_at_address_vector_end(address_vector_t **addr_vector, int value);
+
+
+
+int get_increment_value( token_t *token_list );
+
+
+
+int convert_token_to_int(char *sym);
+
+
 
 // Implementações
 
 // Avalia se os argumentos passados ao programa estão corretos.
-int valid_command(int count, char const *arguments[]){
+// Retorna 0 se os argumentos passados não estiverem corretos. Se estiverem, retorna 1.
+int valid_command(int argc, char const *argv[]){
     char const *temp;
-    if ( \
-        (count != 4) \
-        || (   (strcmp(arguments[1], "-p")) \
-            && (strcmp(arguments[1], "-m")) \
-            && (strcmp(arguments[1], "-o")) ) \
-        || ( (temp = strstr(arguments[2], ".asm")) == NULL) \
-        || ( (*(temp+4)) != '\0') \
-        || ( (temp = strstr(arguments[3], ".o")) == NULL) \
-        || ( (*(temp+2)) != '\0') \
-    ) {
-        printf( MAN_MESSAGE, arguments[0], arguments[0], arguments[0] );
-        return 1;
+    int count;
+
+    if ( ( argc < 2 ) || ( argc > 4 ) ){
+        printf( MAN_MESSAGE, argv[0] );
+        return 0;
     }
-    else return 0;
+    for ( count = 1; count < argc; count++ ) {
+        if ( !( temp = strstr(argv[count], ".asm") ) || ( *(temp+4) != '\0') ){
+            printf( MAN_MESSAGE, argv[0] );
+            return 0;
+        }
+    }
+    return 1;
 }
 
 
@@ -228,7 +267,7 @@ int get_next_token(char *input_line, char *output_token){
     // Comportamento do scanset definido:
     // %*[ \t] ignora espaços e tabs que antecedem o token;
     // %[^ \t] lê o restante da linha (máximo de 100 caracteres), para ao encontrar a primeira ocorrência de um espaço ou tab e salva a string lida em output_token (não separa tokens ",", "+" e "-" quando emendados a outros tokens);
-    //NOTE: Se o tamanho da macro MAX_IDENTIFIER_WIDTH for alterado (!= 500), é necessário alterar o tamanho máximo do 2º parâmetro do scanset.
+    //NOTE: Se o tamanho da macro MAX_IDENTIFIER_WIDTH for alterado (!= 100), é necessário alterar o tamanho máximo do 2º parâmetro do scanset.
     sscanf(input_line, " %100[^\t ]", output_token);
 
     // Testa se o token possui uma vírgula e a separa caso precise
@@ -298,7 +337,7 @@ void generate_line_tokens_list(FILE *source_file, token_t **token_list, int *lin
         line_ptr = strstr(line_ptr, retrieved_token_id) + retrieved_token_length;
 
         // A conversão só pode ser feita após o incremento de line_ptr.
-        convert_string_to_all_caps(last_created_node->token_identifier);
+        convert_string_to_all_caps(last_created_node->token_id);
 
         define_token_type(last_created_node);
 
@@ -320,7 +359,7 @@ void define_token_type(token_t *node){
     char *temp;
 
     // Testa se o token possui ":" (símbolo exclusivo de labels)
-    if (   ( temp = strstr(node->token_identifier, ":") ) \
+    if (   ( temp = strstr(node->token_id, ":") ) \
         && ( temp != NULL ) \
     ){
         // Se o ":" não for o último caracter do identificador, define o tipo como "invalid".
@@ -330,20 +369,28 @@ void define_token_type(token_t *node){
             // Remove o ":" do final do token
             *temp = '\0';
 
+            // Testa se o token tem o mesmo nome de uma diretiva ou instrução
+            if ( \
+                    ( is_directive(node->token_id) ) \
+                ||  ( is_instruction(node->token_id) ) \
+            ) {
+                node->type = invalid;
+            }
+
             // Se o símbolo for válido, define tipo como "label"
-            if ( is_symbol(node->token_identifier) ) node->type = label;
+            else if ( is_symbol(node->token_id) ) node->type = label;
 
             // Se o símbolo não for válido, define tipo como "invalid".
             else node->type = invalid;
         }
     }
-    else if ( is_directive(node->token_identifier) )   node->type = directive;
-    else if ( is_instruction(node->token_identifier) ) node->type = instruction;
-    else if ( is_symbol(node->token_identifier) )      node->type = symbol;
-    else if ( is_number(node->token_identifier) )      node->type = number;
-    else if ( is_char(node->token_identifier, ",") )   node->type = comma;
-    else if ( is_char(node->token_identifier, "+") )   node->type = plus;
-    else if ( is_char(node->token_identifier, "-") )   node->type = minus;
+    else if ( is_directive(node->token_id) )   node->type = directive;
+    else if ( is_instruction(node->token_id) ) node->type = instruction;
+    else if ( is_symbol(node->token_id) )      node->type = symbol;
+    else if ( is_number(node->token_id) )      node->type = number;
+    else if ( is_char(node->token_id, ",") )   node->type = comma;
+    else if ( is_char(node->token_id, "+") )   node->type = plus;
+    else if ( is_char(node->token_id, "-") )   node->type = minus;
     else node->type = invalid;
 }
 
@@ -391,22 +438,26 @@ int is_char(char *id, const char *character){
 
 // Testa se o token é uma diretiva
 int is_directive(char *id){
-    if ( !(strcmp(id, "SECTION")) )     return 1;
-    else if ( !(strcmp(id, "SPACE")) )  return 1;
-    else if ( !(strcmp(id, "CONST")) )  return 1;
-    else if ( !(strcmp(id, "EQU")) )    return 1;
-    else if ( !(strcmp(id, "IF")) )     return 1;
-    else if ( !(strcmp(id, "MACRO")) )  return 1;
-    else if ( !(strcmp(id, "END")) )    return 1;
-    else if ( !(strcmp(id, "TEXT")) )   return 1;
-    else if ( !(strcmp(id, "DATA")) )   return 1;
+    if      ( !(strcmp(id, "SECTION")) )    return 1;
+    else if ( !(strcmp(id, "SPACE")) )      return 1;
+    else if ( !(strcmp(id, "CONST")) )      return 1;
+    else if ( !(strcmp(id, "EQU")) )        return 1;
+    else if ( !(strcmp(id, "IF")) )         return 1;
+    else if ( !(strcmp(id, "MACRO")) )      return 1;
+    else if ( !(strcmp(id, "ENDMACRO")) )   return 1;
+    else if ( !(strcmp(id, "BEGIN")) )      return 1;
+    else if ( !(strcmp(id, "END")) )        return 1;
+    else if ( !(strcmp(id, "TEXT")) )       return 1;
+    else if ( !(strcmp(id, "DATA")) )       return 1;
+    else if ( !(strcmp(id, "PUBLIC")) )     return 1;
+    else if ( !(strcmp(id, "EXTERN")) )     return 1;
     else return 0; // Falso
 }
 
 
 // Testa se o token é uma istrução
 int is_instruction(char *id){
-    if ( !(strcmp(id, "ADD")) )         return 1;
+    if      ( !(strcmp(id, "ADD")) )    return 1;
     else if ( !(strcmp(id, "SUB")) )    return 1;
     else if ( !(strcmp(id, "MULT")) )   return 1;
     else if ( !(strcmp(id, "DIV")) )    return 1;
@@ -442,7 +493,7 @@ token_t * insert_node_at_list_end(token_t **token_list, char *retrieved_token_id
     token_t *new_node = (token_t*) malloc(sizeof(token_t));
 
     // Inicializa novo token
-    strcpy(new_node->token_identifier, retrieved_token_id);
+    strcpy(new_node->token_id, retrieved_token_id);
     new_node->type = undefined;
     new_node->source_file_line = line_count;
     new_node->output_file_byte = -1;
@@ -566,7 +617,7 @@ void write_line_into_output(token_t *token_list, FILE *output_ptr){
     if ( temp == NULL ) return;
 
     while ( temp != NULL ){
-        fprintf(output_ptr, "%s", temp->token_identifier);
+        fprintf(output_ptr, "%s", temp->token_id);
         if ( temp->type == label ) fprintf(output_ptr, ":");
         if ( ( temp = temp->next ) != NULL  ) fprintf(output_ptr, " ");
     }
@@ -600,12 +651,12 @@ void replace_equ_defined_symbols(token_t *token_list, symbol_table_t *symbol_tab
         if ( temp->type == symbol ){
             status = retrieve_symbol_from_table( \
                         symbol_table, \
-                        temp->token_identifier, \
+                        temp->token_id, \
                         &value);
 
             if ( status == 1 ){
                 temp->type = number;
-                sprintf(temp->token_identifier, "%d", value);
+                sprintf(temp->token_id, "%d", value);
             }
         }
         temp = temp->next;
@@ -764,11 +815,268 @@ void erase_macro_table( macro_name_table_t **macro_table ){
 
 
 
+int check_symbol_table( assembler_symbol_table_t **table, char *symbol, int address ){
+
+    assembler_symbol_table_t *table_ptr = *table;
+    // assembler_symbol_table_t *prev_node = NULL;
+
+    while ( table_ptr != NULL ){
+        if ( !( strcmp( table_ptr->symbol, symbol ) ) ) {
+            create_node_at_address_vector_end(&(table_ptr->address), address);
+            return table_ptr->value;
+        }
+        // prev_node = table_ptr;
+        table_ptr = table_ptr->next;
+    }
+
+    table_ptr = create_node_at_table_end( table, symbol, 0, 0, 0, 0);
+    create_node_at_address_vector_end(&(table_ptr->address), address);
+
+    return 0;
+}
 
 
 
+assembler_symbol_table_t * define_entry_on_symbol_table( assembler_symbol_table_t **table, char *symbol, int value ){
+
+    assembler_symbol_table_t *table_ptr = *table;
+
+    while ( table_ptr != NULL ){
+        if ( !( strcmp( table_ptr->symbol, symbol ) ) ){
+            table_ptr->defined = 1;
+            table_ptr->value   = value;
 
 
+            return table_ptr;
+        }
+        table_ptr = table_ptr->next;
+    }
+
+    return create_node_at_table_end( table, symbol, 1, value, 0, 0);
+
+}
+
+void set_table_symbol_as_public( assembler_symbol_table_t **table, char *symbol) {
+
+    assembler_symbol_table_t *table_ptr = *table;
+
+    while ( table_ptr != NULL ){
+        if ( !( strcmp( table_ptr->symbol, symbol ) ) ){
+            table_ptr->public_symbol = 1;
+
+            return;
+        }
+        table_ptr = table_ptr->next;
+    }
+
+    create_node_at_table_end( table, symbol, 0, 0, 1, 0);
+
+    return;
+}
+
+
+assembler_symbol_table_t * create_node_at_table_end(assembler_symbol_table_t **table, char *symbol, int defined, int value, int public_symbol, int extern_symbol){
+
+    assembler_symbol_table_t *temp      = NULL;
+    assembler_symbol_table_t *new_node  = (assembler_symbol_table_t*) malloc(sizeof(assembler_symbol_table_t));
+
+    // Inicializa novo token
+    strcpy(new_node->symbol, symbol);
+    new_node->defined       = defined;
+    new_node->value         = value;
+    new_node->public_symbol = public_symbol;
+    new_node->extern_symbol = extern_symbol;
+    new_node->address       = NULL;
+    new_node->next          = NULL;
+
+    if ( *table == NULL ) {
+        *table = new_node;
+    }
+    else {
+        temp = *table;
+        while ( temp->next != NULL ) temp = temp->next;
+        temp->next = new_node;
+    }
+
+    return new_node;
+}
+
+
+
+void create_node_at_address_vector_end(address_vector_t **addr_vector, int value){
+
+    address_vector_t *temp      = NULL;
+    address_vector_t *new_node  = (address_vector_t*) malloc(sizeof(address_vector_t));
+
+    new_node->value = value;
+    new_node->next  = NULL;
+
+    if ( *addr_vector == NULL ){
+        *addr_vector = new_node;
+    }
+    else {
+        temp = *addr_vector;
+        while ( temp->next != NULL ) temp = temp->next;
+        temp->next = new_node;
+    }
+}
+
+
+
+int get_increment_value( token_t *token_list ){
+    if ( ( token_list != NULL ) && ( token_list->next != NULL ) ) {
+        if ( token_list->type == plus ){
+            return ( convert_token_to_int(token_list->next->token_id) );
+        }
+
+        else if ( token_list->type == minus ){
+            return - ( convert_token_to_int(token_list->next->token_id) );
+        }
+    }
+    return 0;
+}
+
+
+
+int convert_token_to_int(char *sym){
+    int temp;
+
+    if ( ( sym == strstr(sym, "0X") ) && ( sscanf(sym, "%X", &temp) ) )
+        return temp;
+    else if ( ( sscanf(sym, "%d", &temp) ) )
+        return temp;
+    else
+        return 0;
+}
+
+
+
+token_t * find_token_by_type(token_t *list, token_type type){
+
+    token_t *ptr = list;
+
+    while ( ptr != NULL ){
+        if ( ptr->type == type ) break;
+        ptr = ptr->next;
+    }
+
+    return ptr;
+}
+
+
+void save_defined_value_into_file(address_vector_t *vector, FILE *binary_ptr, int value){
+
+    address_vector_t *ptr = vector;
+    fpos_t eof_position;
+    int increment = 0;
+
+    fgetpos(binary_ptr, &eof_position);
+
+    while ( ptr != NULL ){
+        fseek( binary_ptr, (ptr->value * sizeof(int) ) , SEEK_SET);
+        fread( &increment, sizeof(int), 1, binary_ptr );
+        fseek( binary_ptr, (ptr->value * sizeof(int) ) , SEEK_SET);
+        value += increment;
+        fwrite( &value, sizeof(int), 1, binary_ptr );
+
+        ptr = ptr->next;
+    }
+
+    fsetpos(binary_ptr, &eof_position);
+}
+
+
+void parse_bin_file_to_text(FILE *txt, FILE *bin){
+
+    int temp;
+
+    rewind(bin);
+    while ( !( feof(bin) ) ){
+        fread( &temp, sizeof(int), 1, bin);
+        if ( feof(bin) ) break;
+        fprintf(txt, " %d", temp);
+    }
+
+}
+
+
+void add_char_to_bitmap(char bit, FILE *file){
+    fwrite( &bit, sizeof(char), 1, file );
+}
+
+
+void parse_bitmap_to_text(FILE *txt, FILE *bin){
+
+    char temp;
+
+    rewind(bin);
+    while ( !( feof(bin) ) ){
+        fread( &temp, sizeof(char), 1, bin);
+        if ( feof(bin) ) break;
+        fprintf(txt, "%c", temp);
+    }
+
+}
+
+void print_public_symbols_into_file(assembler_symbol_table_t *table, FILE *file){
+
+    assembler_symbol_table_t *temp = table;
+
+    while ( temp != NULL ){
+        if ( temp->public_symbol == 1 ){
+            fprintf( file, "\nTD: %s %d", temp->symbol, temp->value );
+        }
+
+        temp = temp->next;
+    }
+
+}
+
+void print_usage_table_into_file(assembler_symbol_table_t *table, FILE *file) {
+
+    assembler_symbol_table_t *temp  = table;
+    address_vector_t *vec_index     = NULL;
+
+
+    while ( temp != NULL ){
+        if ( temp->extern_symbol == 1 ){
+            fprintf(file, "\nTU: %s", temp->symbol);
+            vec_index = temp->address;
+            while ( vec_index != NULL ){
+                fprintf(file, " %d", vec_index->value);
+
+                vec_index = vec_index->next;
+            }
+        }
+
+        temp = temp->next;
+    }
+}
+
+
+void erase_address_vector(address_vector_t **vector){
+
+    address_vector_t *temp;
+
+    while ( *vector != NULL ){
+        temp = *vector;
+        *vector = (*vector)->next;
+        free(temp);
+    }
+}
+
+void erase_assembler_symbol_table(assembler_symbol_table_t **table){
+
+    assembler_symbol_table_t *temp;
+
+    while ( *table ) {
+        temp = *table;
+        erase_address_vector(&((*table)->address));
+        *table = (*table)->next;
+        free(temp);
+    }
+
+}
 
 
 

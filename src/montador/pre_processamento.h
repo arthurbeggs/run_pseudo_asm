@@ -13,10 +13,10 @@
 #include "functions.h"
 
 // Realiza o pré processamento do arquivo
-void pre_processamento(char const *source_file, char const *output_file);
+void pre_processamento(char const *source_file);
 
 
-void pre_processamento(char const *source_file, char const *output_file){
+void pre_processamento(char const *source_file){
 
     char temp_string[ MAX_IDENTIFIER_WIDTH + 5 ];
 
@@ -26,33 +26,36 @@ void pre_processamento(char const *source_file, char const *output_file){
 
     int line_count = 0, temp, status;
 
-    strcpy(temp_string, output_file);
 
     FILE *source_ptr; // Arquivo de entrada - source file pointer
     FILE *output_ptr; // Arquivo de saída - output file pointer
     FILE *binary_ptr; // Arquivo intermediário - binary file pointer
 
-    source_ptr = fopen(source_file, "r"); // Abre o arquivo de entrada em modo leitura.
-
-    output_ptr = fopen(strcat(temp_string, ".pre"), "w"); // Cria o arquivo de saída com o nome dado pelo usuário.
-
-    binary_ptr = fopen(strcat(temp_string, ".tmp"), "wb"); // Cria o arquivo intermediário com o nome dado pelo usuário.
-
-
+    // Abre o arquivo de entrada em modo leitura.
+    strcpy(temp_string, source_file);
+    strcat(temp_string, ".asm");
+    source_ptr = fopen(temp_string, "r");
     if ( source_ptr == NULL ){
-        printf("\n Houve um erro ao abrir o arquivo %s !\n", source_file);
+        printf("\n Houve um erro ao abrir o arquivo %s !\n", temp_string);
         exit(1);
     }
 
+    // Cria o arquivo de saída em modo escrita.
+    strcpy(temp_string, source_file);
+    strcat(temp_string, ".pre");
+    output_ptr = fopen(temp_string, "w");
     if ( output_ptr == NULL ){
-        printf("\n Houve um erro ao criar o arquivo %s !\n", output_file);
+        printf("\n Houve um erro ao criar o arquivo %s !\n", temp_string);
         exit(1);
     }
 
+    // Cria o arquivo intermediário em modo de escrita binária.
+    binary_ptr = fopen(strcat(temp_string, ".tmp"), "wb");
     if ( binary_ptr == NULL ){
         printf("\n Houve um erro ao criar o arquivo temporário! \n");
         exit(1);
     }
+
 
     while ( !(feof(source_ptr)) ){
         ++line_count;
@@ -66,11 +69,12 @@ void pre_processamento(char const *source_file, char const *output_file){
         // Se a linha estiver vazia, lê a próxima linha.
         if ( token_list == NULL ) continue;
 
+
         // Testa se a linha tem uma diretiva EQU na posição esperada (2º token, antecedido de um label).
         if ( ( token_list->type == label ) \
           && ( token_list->next != NULL ) \
           && ( token_list->next->type == directive ) \
-          && !( strcmp(token_list->next->token_identifier, "EQU") ) \
+          && !( strcmp(token_list->next->token_id, "EQU") ) \
         ) {
             // Se o 3º token da linha não for um número ou um sinal seguido de número, lança a mensagem de erro e passa para a leitura da próxima linha, ignorando a atual.
             if ( ( token_list->next->next->type != number ) \
@@ -97,17 +101,17 @@ void pre_processamento(char const *source_file, char const *output_file){
                 printf( EQU_TOO_MUCH_ARGUMENTS, token_list->next->source_file_line );
             }
 
-            strcpy(temp_string, token_list->next->next->token_identifier);
+            strcpy(temp_string, token_list->next->next->token_id);
 
             // Adiciona sinal ao valor do símbolo, caso exista
             if ( ( token_list->next->next->type != number ) ) {
-                strcat(temp_string, token_list->next->next->next->token_identifier);
+                strcat(temp_string, token_list->next->next->next->token_id);
             }
 
             // Se o símbolo já tiver sido inserido na tabela de símbolos, seu valor é substituído pelo mais recente, uma mensagem de erro é lançada para indicar a redefinição de símbolos e passa para a leitura da próxima linha.
             if ( insert_label_into_symbol_table( \
                     &symbol_table, \
-                    token_list->token_identifier, \
+                    token_list->token_id, \
                     convert_string_to_int( temp_string ) ) \
             ) { printf( SYMBOL_REDEFINED, token_list->source_file_line ); }
             continue;
@@ -117,13 +121,13 @@ void pre_processamento(char const *source_file, char const *output_file){
         else if ( ( token_list->type == directive ) \
              && ( token_list->next != NULL ) \
              && ( token_list->next->type == symbol ) \
-             && !( strcmp(token_list->token_identifier, "IF") ) \
+             && !( strcmp(token_list->token_id, "IF") ) \
         ){
 
             // Recupera símbolo da tabela.
             status = retrieve_symbol_from_table( \
                         symbol_table, \
-                        token_list->next->token_identifier, \
+                        token_list->next->token_id, \
                         &temp);
 
             // Se o símbolo não existir na tabela, lança mensagem de erro e apaga a linha atual e a próxima.
