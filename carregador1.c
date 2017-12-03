@@ -60,6 +60,7 @@ int main(int argc, char *argv[]){
         j = v[i+1];
         a = v[j];
         ACC = ACC + a;
+        i++;
       break;
 
       case 2 :
@@ -67,6 +68,7 @@ int main(int argc, char *argv[]){
         j = v[i+1];
         a = v[j];
         ACC = ACC - a;
+        i++;
       break;
 
       case 3 :
@@ -74,6 +76,7 @@ int main(int argc, char *argv[]){
         j = v[i+1];
         a = v[j];
         ACC = ACC * a;
+        i++;
       break;
 
       case 4 :
@@ -81,17 +84,20 @@ int main(int argc, char *argv[]){
         j = v[i+1];
         a = v[j];
         ACC = ACC / a;
+        i++;
       break;
 
       case 5 :
         printf("JMP\n");
         PC = v[i+1];
+        i = PC;
       break;
 
       case 6 :
         printf("JMPN\n");
         if (ACC<0){
           PC = v[i+1];
+          i = PC;
         }
       break;
 
@@ -99,6 +105,7 @@ int main(int argc, char *argv[]){
         printf("JMPP\n");
         if (ACC>0){
           PC = v[i+1];
+          i = PC;
         }
       break;
 
@@ -106,34 +113,39 @@ int main(int argc, char *argv[]){
         printf("JMPZ\n");
         if (ACC=0){
           PC = v[i+1];
-          //i = PC;
+          i = PC;
         }
       break;
 
       case 9 :
         printf("COPY\n");
         v[i+1] = v[i+2];
+        i = i + 2; // copy tem dois operandos
       break;
 
       case 10 :
         printf("LOAD\n");
         ACC = v[i+1];
+        i++;
       break;
 
       case 11 :
         printf("STORE\n");
         v[i+1] = ACC;
+        i++;
       break;
 
       case 12 :
         printf("INPUT\n");
         scanf("%d", &input;
         v[i+1] = input;
+        i++;
       break;
 
       case 13 :
         printf("OUTPUT\n");
         printf("%d\n", v[i+1] );
+        i++;      
       break;
 
       case 14 :
@@ -141,8 +153,6 @@ int main(int argc, char *argv[]){
       break;
     }
 }
-
-
 
   
 
