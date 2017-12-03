@@ -6,9 +6,9 @@ montador_sources   = src/montador/montador.c src/montador/error_messages.h \
 					 src/montador/pre_processamento.h \
 					 src/montador/processa_macros.h
 
-ligador_sources    = src/ligador/ligador.c
+ligador_sources    = src/ligador/ligador.c src/ligador/functions.h
 
-carregador_sources = src/carregador/carregador.c
+carregador_sources = src/carregador/carregador.c src/carregador/functions.h
 
 # Define compilador utilizado
 CC = gcc
