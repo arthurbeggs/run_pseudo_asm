@@ -35,6 +35,8 @@ void montagem(char const *source_file, int modularized){
     int has_begin  = 0;
     int has_end    = 0;
 
+    char *str_ptr  = NULL;
+
     // Salva o nome do arquivo para utilizar no cabeçalho do arquivo objeto
     strcpy(filename, source_file);
 
@@ -656,6 +658,11 @@ void montagem(char const *source_file, int modularized){
 
 
     // Escreve arquivo de saída
+
+    while ( ( str_ptr = strstr(filename, "/") ) != NULL ){
+        strcpy(filename, str_ptr + 1);
+    }
+
     fprintf(output_ptr, "H: %s\n", filename);
     fprintf(output_ptr, "H: %d\n", word_count); // Tamanho do código
 
