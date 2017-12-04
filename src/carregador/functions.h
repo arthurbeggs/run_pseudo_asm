@@ -111,6 +111,11 @@ int check_chunk_sobreposition(chunk_table_t *table);
 void insert_chunk_entry(chunk_table_t **table, int size, int address);
 
 
+// Procura chunk com tamanho suficiente e retorna seu endereço
+// Retorna -1 se não houver chunk grande o suficiente
+int search_big_enough_chunk(chunk_table_t *table, int size);
+
+
 
 ////////////////////
 // Implementações //
@@ -390,7 +395,8 @@ int create_chunk_table(chunk_table_t **table, const char **argv) {
         sscanf(argv[ 3 + iterator + chunks ], "%d", &chunk_start);
 
         insert_chunk_entry( table, chunk_size, chunk_start );
-        available_space += chunk_size;
+        // Ignora byte não-alinhável em words.
+        available_space += (chunk_size - ( chunk_size % 2 )) ;
     }
 
     if ( check_chunk_sobreposition( *table ) ) {
@@ -480,8 +486,24 @@ void insert_chunk_entry(chunk_table_t **table, int size, int address) {
             table_ptr = table_ptr->next;
         }
         prev_ptr->next = new_node;
+        new_node->next = NULL;
     }
     return;
+}
+
+
+// Procura chunk com tamanho suficiente e retorna seu endereço
+// Retorna -1 se não houver chunk grande o suficiente
+int search_big_enough_chunk(chunk_table_t *table, int size) {
+
+    chunk_table_t *pointer = table;
+
+    while ( pointer != NULL ) {
+        if ( pointer->size >= size ) return pointer->address;
+        pointer = pointer->next;
+    }
+
+    return -1;
 }
 
 

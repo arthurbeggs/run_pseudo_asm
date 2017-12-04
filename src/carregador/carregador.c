@@ -21,8 +21,12 @@ int main(int argc, char const *argv[]) {
     FILE *source_ptr;
 
     // Outras variáveis
-    chunk_table_t *chunk_table;
+    chunk_table_t *chunk_table = NULL;
     int available_space = 0;    // Em bytes
+    int selected_chunk_addr;
+    char temp_string[ MAX_IDENTIFIER_WIDTH + 1 ];
+    FILE *output_ptr;
+    int iterator = 0;
 
 
     if ( invalid_arguments(argc, argv) ){
@@ -53,15 +57,49 @@ int main(int argc, char const *argv[]) {
 
     available_space = create_chunk_table( &chunk_table, argv );
 
-    if ( !(available_space) ) {
+    if ( ( available_space - (file_size * 2) ) < 0 ) {
         printf(OUT_OF_MEM);
         exit(1);
     }
 
-    // TODO: Criar imagem de memória
+    // Cria o arquivo de saída em modo escrita.
+    strcpy(temp_string, argv[ 1 ]);
+    strcat(temp_string, ".im");
+    output_ptr = fopen(temp_string, "w");
+    if ( output_ptr == NULL ){
+        printf("\n Houve um erro ao criar o arquivo %s !\n", temp_string);
+        exit(1);
+    }
+
+
+    selected_chunk_addr = search_big_enough_chunk(chunk_table, (file_size * 2));
+
+    // Escreve a memória em mais de 1 chunk
+    if ( selected_chunk_addr == -1 ) {
 
 
 
+
+
+
+
+
+    }
+
+    // Escreve a memória em um único chunk
+    else {
+        for ( iterator = 0; iterator < file_size; iterator++ ) {
+            if ( file_reloc[ iterator ] == '0' ){
+                fprintf( output_ptr, " %d", file_content[ iterator ] );
+            }
+
+            else {
+                fprintf( output_ptr, " %d", (file_content[ iterator ] + selected_chunk_addr) );
+            }
+        }
+    }
+
+    fclose(output_ptr);
 
     return 0;
 }
