@@ -24,6 +24,7 @@ int main(int argc, char const *argv[]) {
 
     // Outras variáveis
     int iterator;
+    int offset;
 
 
     if ( invalid_arguments(argc, argv) ){
@@ -58,7 +59,14 @@ int main(int argc, char const *argv[]) {
         iterator++;
     }
 
+    offset = 0;
+    for ( iterator = 0 ; ( iterator < (argc - 1) ) ; iterator++ ) {
 
+        update_usage_addresses( &usage_table[ iterator ], offset );
+        update_definition_addresses( &def_table[ iterator ], offset );
+
+        offset += module_size[ iterator ];
+    }
 
 
 

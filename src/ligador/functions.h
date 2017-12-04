@@ -62,6 +62,7 @@ typedef struct usage_table_t{
 }usage_table_t;
 
 
+
 ///////////////////////////
 // Protótipos de funções //
 ///////////////////////////
@@ -97,6 +98,14 @@ void insert_definition_entry(definition_table_t **table, FILE *file_ptr);
 
 // Adiciona entrada ao final do vetor de endereços
 void insert_address_entry(address_vector_t **vector, int value);
+
+
+// Atualiza endereços na tabela de uso
+void update_usage_addresses(usage_table_t **table, int offset);
+
+
+// Atualiza endereços na tabela de definição
+void update_definition_addresses(definition_table_t **table, int offset);
 
 
 ////////////////////
@@ -242,6 +251,36 @@ void insert_address_entry(address_vector_t **vector, int value){
         temp = *vector;
         while ( temp->next != NULL ) temp = temp->next;
         temp->next = new_node;
+    }
+}
+
+
+// Atualiza endereços na tabela de uso
+void update_usage_addresses(usage_table_t **table, int offset) {
+
+    usage_table_t *temp      = *table;
+    address_vector_t *vector = NULL;
+
+    while ( temp != NULL ){
+        vector = temp->address;
+        while( vector != NULL ){
+            vector->value += offset;
+            vector = vector->next;
+        }
+
+        temp = temp->next;
+    }
+}
+
+
+// Atualiza endereços na tabela de definição
+void update_definition_addresses(definition_table_t **table, int offset) {
+
+    definition_table_t *temp = *table;
+
+    while ( temp != NULL ){
+        temp->value += offset;
+        temp = temp->next;
     }
 }
 
