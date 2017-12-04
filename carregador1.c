@@ -11,8 +11,9 @@
 int main(int argc, char *argv[]){
   FILE *arq;
   int qnt_words;
-  int i,j, inst, input, ACC, PC;
+  int i,j, inst, input, ACC, PC, a;
   int *v;
+  char c;
   
 
   // Abre um arquivo arquivo para leitura
@@ -38,14 +39,11 @@ int main(int argc, char *argv[]){
   i=0;
   do{ //salva as words no vetor alocado
     fscanf(arq, "%d", &v[i] );
+    printf("%d\n", v[i]);
     i++; 
-      
-  }while ((c=getc(arq))!= '\n');
+        
+  }while (i<qnt_words);
   
-
- /*for (int i = 0; i < qnt_words; ++i)  {
-       printf("%d\n", v[i]);
- }*/
 
 
 ///SIMULAÇÂO
@@ -55,6 +53,10 @@ int main(int argc, char *argv[]){
     inst = v[i];
     switch ( inst )
     {
+      case 0 :
+      printf("SPACE\n");
+      break;
+
       case 1 :
         printf("ADD\n");
         j = v[i+1];
@@ -137,7 +139,7 @@ int main(int argc, char *argv[]){
 
       case 12 :
         printf("INPUT\n");
-        scanf("%d", &input;
+        scanf("%d", &input);
         v[i+1] = input;
         i++;
       break;
@@ -150,7 +152,7 @@ int main(int argc, char *argv[]){
 
       case 14 :
         printf("STOP\n");
-      break;
+        break;
     }
 }
 
