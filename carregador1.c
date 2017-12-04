@@ -10,11 +10,10 @@
 
 int main(int argc, char *argv[]){
   FILE *arq;
-  int qnt_words;
-  int i,j, inst, input, ACC, PC, a, v[26];
-  //int *v;
-  //char *r;
-  char c, r[26];
+  int qnt_words, i, j, inst, input, ACC, PC, a;
+  int *v;
+  char *r;
+  char c;
   
 
   // Abre um arquivo arquivo para leitura
