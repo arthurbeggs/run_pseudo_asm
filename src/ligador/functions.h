@@ -34,7 +34,7 @@
                     Argumentos inválidos!\n\n\
   Modo de uso:\n\
    > %s <object_file> ...\n\
-     Realiza a montagem do código.\n\
+     Realiza a ligação do código.\n\
      Podem ser fornecidos de 1 a 3 <object_file> com extensão \".o\".\n\n\
                   A execução será abortada!\n\n\
 *************************************************************\n"

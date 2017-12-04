@@ -21,6 +21,8 @@ int main(int argc, char const *argv[]) {
     FILE *source_ptr;
 
     // Outras variáveis
+    chunk_table_t *chunk_table;
+    int available_space = 0;    // Em bytes
 
 
     if ( invalid_arguments(argc, argv) ){
@@ -43,19 +45,23 @@ int main(int argc, char const *argv[]) {
 
     read_content_from_executable( file_content, file_size, source_ptr );
 
+    fclose( source_ptr );
+
 
     // Simula o código
     simulate( file_content, file_size );
 
+    available_space = create_chunk_table( &chunk_table, argv );
 
-
-    // TODO: Dividir em chunks
+    if ( !(available_space) ) {
+        printf(OUT_OF_MEM);
+        exit(1);
+    }
 
     // TODO: Criar imagem de memória
 
 
 
-    fclose( source_ptr );
 
     return 0;
 }

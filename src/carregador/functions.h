@@ -36,12 +36,37 @@
 
 #define DIV_BY_ZERO "\n[Divisão por Zero] O programa simulado tentou dividir por zero.\n\tA simulação será abortada!\n"
 
+#define MAN_MESSAGE "\
+*************************************************************\n\
+*********        Carregador Pseudo-Assembly         *********\n\
+*************************************************************\n\n\
+                    Argumentos inválidos!\n\n\
+  Modo de uso:\n\
+   > %s <executable_file> <chunks> <chunk_size> ... <chunk_start> ...\n\
+     Realiza o carregamento do código.\n\
+     - <executable_file> é um arquivo carregável.\n\
+     - <chunks> é o número de chunks disponibilizados para o programa.\n\
+     - <chunk_size> é o tamanho de cada chunk. Devem haver <chunk> argumentos <chunk_size>.\n\
+     - <chunk_start> é a posição inicial de cada chunk. Devem haver <chunk> argumentos <chunk_start>.\n\
+     - Os chunks não devem se sobrepor.\n\n\
+                  A execução será abortada!\n\n\
+*************************************************************\n"
+
+#define CHUNK_SOBREPOSITION "\n[Sobreposição de Chunks] Há sobreposição nos chunks fornecidos.\n\tO programa será abortado!\n"
+
+#define OUT_OF_MEM "\n\nOUT OF MEMORY - YOUR PROGRAM WILL NOT BE LOADED\n\n"
+
+
 
 /////////////////////////
 // Definições de tipos //
 /////////////////////////
 
-
+typedef struct chunk_table_t{
+    int size;
+    int address;
+    struct chunk_table_t *next;
+}chunk_table_t;
 
 ///////////////////////////
 // Protótipos de funções //
@@ -72,6 +97,21 @@ void read_content_from_executable(int *content, int size, FILE *file_ptr);
 void simulate(const int *content, int size);
 
 
+// Monta tabela de chunks
+// Retorna a quantidade de endereços disponível.
+int create_chunk_table(chunk_table_t **table, const char **argv);
+
+
+// Verifica se há sobreposição nos chunks.
+// Se houver, retorna 1. Senão retorna 0
+int check_chunk_sobreposition(chunk_table_t *table);
+
+
+// Insere entrada tabela de chunks ordenada por endereço
+void insert_chunk_entry(chunk_table_t **table, int size, int address);
+
+
+
 ////////////////////
 // Implementações //
 ////////////////////
@@ -79,6 +119,24 @@ void simulate(const int *content, int size);
 // Valida argumentos passados por linha de comando
 // Retorna 1 para argumentos inválidos e 0 para argumentos válidos
 int invalid_arguments(int argc, char const *argv[]){
+
+    int value;
+    int iterator;
+
+    if ( (argc < 3) \
+      || ( !( sscanf(argv[2], "%d", &value) ) ) \
+      || ( argc != ( (2 * value) + 3 ) ) \
+    ) {
+        printf( MAN_MESSAGE, argv[0] );
+        return 1;
+    }
+
+    for ( iterator  = 3 ; iterator < argc ; iterator++ ) {
+        if ( !( sscanf(argv[ iterator ], "%d", &value) ) ) {
+            printf( MAN_MESSAGE, argv[0] );
+            return 1;
+        }
+    }
 
     return 0;
 }
@@ -311,6 +369,119 @@ void simulate(const int *content, int size) {
     }
 
     free( data );
+}
+
+
+// Monta tabela de chunks
+// Retorna a quantidade de endereços disponível.
+int create_chunk_table(chunk_table_t **table, const char **argv) {
+
+    int iterator;
+    int chunks;
+    int chunk_size;
+    int chunk_start;
+    int available_space;
+
+    sscanf(argv[2], "%d", &chunks);
+
+    available_space = 0;
+    for ( iterator = 0; iterator < chunks; iterator++ ) {
+        sscanf(argv[ 3 + iterator ], "%d", &chunk_size);
+        sscanf(argv[ 3 + iterator + chunks ], "%d", &chunk_start);
+
+        insert_chunk_entry( table, chunk_size, chunk_start );
+        available_space += chunk_size;
+    }
+
+    if ( check_chunk_sobreposition( *table ) ) {
+        printf(CHUNK_SOBREPOSITION);
+        exit(1);
+    }
+
+    return available_space;
+}
+
+
+// Verifica se há sobreposição nos chunks.
+// Se houver, retorna 1. Senão retorna 0
+int check_chunk_sobreposition(chunk_table_t *table) {
+
+    chunk_table_t *table_ptr = table;
+    chunk_table_t *temp;
+
+    int arg0_inf_limit;
+    int arg1_inf_limit;
+    int arg0_sup_limit;
+    int arg1_sup_limit;
+
+    while ( table_ptr != NULL) {
+        temp = table_ptr->next;
+        arg0_inf_limit = table_ptr->address;
+        arg0_sup_limit = arg0_inf_limit + table_ptr->size;
+
+        while ( temp != NULL ) {
+            arg1_inf_limit = temp->address;
+            arg1_sup_limit = arg1_inf_limit + temp->size;
+
+            // Testa se arg0 tem interseção com arg1 ou se arg1 está contido em arg0.
+            if  ( (  ( arg0_inf_limit >= arg1_inf_limit ) \
+                  && ( arg0_inf_limit <= arg1_sup_limit ) ) \
+                || ( ( arg0_sup_limit >= arg1_inf_limit ) \
+                  && ( arg0_sup_limit <= arg1_sup_limit ) )\
+                || ( ( arg1_inf_limit >= arg0_inf_limit ) \
+                  && ( arg1_sup_limit <= arg0_sup_limit ) ) \
+            ) {
+                return 1;
+            }
+
+            temp = temp->next;
+        }
+        table_ptr = table_ptr->next;
+    }
+
+
+
+    return 0;
+}
+
+
+// Insere entrada tabela de chunks ordenada por endereço
+void insert_chunk_entry(chunk_table_t **table, int size, int address) {
+
+    chunk_table_t *prev_ptr  = NULL;
+    chunk_table_t *table_ptr = NULL;
+    chunk_table_t *new_node  = (chunk_table_t*) malloc(sizeof(chunk_table_t));
+
+    new_node->size      = size;
+    new_node->address   = address;
+    new_node->next      = NULL;
+
+    if ( *table == NULL ) {
+        *table = new_node;
+    }
+
+    else {
+        table_ptr = *table;
+        prev_ptr  = NULL;
+
+        while ( table_ptr != NULL ) {
+            if ( table_ptr->address > new_node->address ){
+                if ( prev_ptr == NULL ) {
+                    new_node->next = table_ptr;
+                    *table = new_node;
+                }
+                else{
+                    prev_ptr->next = new_node;
+                    new_node->next = table_ptr;
+                }
+                return;
+            }
+            prev_ptr  = table_ptr;
+            table_ptr = table_ptr->next;
+        }
+        prev_ptr->next = new_node;
+    }
+    return;
 }
 
 
