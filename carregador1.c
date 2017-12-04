@@ -88,7 +88,7 @@ int main(int argc, char *argv[]){
       break;
 
       case 5 :
-        printf("JMP\n");
+        printf("JMP\n"); 
         PC = v[i+1];
         i = PC;
       break;
