@@ -25,6 +25,10 @@ int main(int argc, char const *argv[]) {
     // Outras variáveis
     int iterator;
     int offset;
+    FILE *tempfile_ptr;
+    FILE *output_ptr;
+    char filename[ MAX_IDENTIFIER_WIDTH + 10 ];
+    char *str_pointer;
 
 
     if ( invalid_arguments(argc, argv) ){
@@ -32,6 +36,7 @@ int main(int argc, char const *argv[]) {
     }
 
 
+    offset = 0;
     for ( iterator = 0 ; ( iterator < (argc - 1) ) ; iterator++ ){
 
         source_ptr[ iterator ] = fopen(argv[ iterator + 1 ], "r");
@@ -47,6 +52,10 @@ int main(int argc, char const *argv[]) {
         read_bitstream_from_header( &module_reloc[ iterator ], module_size[ iterator ], source_ptr[ iterator ] );
 
         reconstruct_symbol_tables( &usage_table[ iterator ], &def_table[ iterator ], source_ptr[ iterator ] );
+
+        update_usage_addresses( &usage_table[ iterator ], offset );
+        update_definition_addresses( &def_table[ iterator ], offset );
+        offset += module_size[ iterator ];
     }
 
     while ( iterator < 3 ){
@@ -59,20 +68,50 @@ int main(int argc, char const *argv[]) {
         iterator++;
     }
 
+    // Cria o arquivo temporário.
+    tempfile_ptr = tmpfile();
+    if ( tempfile_ptr == NULL ){
+        printf("\n Houve um erro ao criar o arquivo temporário! \n");
+        exit(1);
+    }
+
     offset = 0;
     for ( iterator = 0 ; ( iterator < (argc - 1) ) ; iterator++ ) {
-
-        update_usage_addresses( &usage_table[ iterator ], offset );
-        update_definition_addresses( &def_table[ iterator ], offset );
-
+        copy_words_to_bin_file( tempfile_ptr, source_ptr[ iterator ], module_reloc[ iterator ], offset, usage_table[ iterator ] );
+        fclose( source_ptr[ iterator ] );
         offset += module_size[ iterator ];
     }
 
+    solve_address_references( usage_table, def_table, tempfile_ptr );
 
+    // Cria o arquivo de saída
+    strcpy(filename, argv[1]);
+    str_pointer = strstr(filename, ".o");
+    *str_pointer = '\0';
 
-    for ( iterator = 0 ; ( iterator < (argc - 1) ) ; iterator++ ){
-        fclose( source_ptr[ iterator ] );
+    output_ptr = fopen(filename, "w");
+    if ( output_ptr == NULL ){
+        printf("\n Houve um erro ao criar o arquivo %s !\n", filename);
+        exit(1);
     }
+
+    // Escreve arquivo de saída
+    fprintf(output_ptr, "H: %s\n", module_name[0]);
+
+    offset = module_size[0] + module_size[1] + module_size[2];
+
+    fprintf(output_ptr, "H: %d\n", offset); // Tamanho do código
+
+    fprintf(output_ptr, "H: ");
+    for ( iterator = 0 ; ( iterator < (argc - 1) ) ; iterator++ ) {
+        fprintf(output_ptr, "%s", module_reloc[ iterator ]);
+    }
+
+    fprintf(output_ptr, "\nT:");
+    parse_bin_file_to_text(output_ptr, tempfile_ptr);
+
+    fclose(tempfile_ptr);
+    fclose(output_ptr);
 
     // TODO: Liberar memória das tabelas e bitstream de relocação.
 

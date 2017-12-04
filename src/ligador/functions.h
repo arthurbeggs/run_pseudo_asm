@@ -108,6 +108,23 @@ void update_usage_addresses(usage_table_t **table, int offset);
 void update_definition_addresses(definition_table_t **table, int offset);
 
 
+// Copia words do arquivo .o para um arquivo binário temporário
+void copy_words_to_bin_file(FILE *dest, FILE *src, char *bitmap, int offset, usage_table_t *table);
+
+
+// Passa words do arquivo binário para o arquivo de texto
+void parse_bin_file_to_text(FILE *txt, FILE *bin);
+
+
+// Resolve referências a outros módulos
+void solve_address_references(usage_table_t **usage_tables, definition_table_t **def_tables, FILE *file_ptr);
+
+// Procura se posição de memória é referenciada na tabela de uso
+// Retorna 1 se houver referência na tabela
+int is_address_in_usage_table(int address, usage_table_t *table);
+
+
+
 ////////////////////
 // Implementações //
 ////////////////////
@@ -285,7 +302,107 @@ void update_definition_addresses(definition_table_t **table, int offset) {
 }
 
 
+// Copia words do arquivo .o para um arquivo binário temporário
+void copy_words_to_bin_file(FILE *dest, FILE *src, char *bitmap, int offset, usage_table_t *table) {
+    int value;
+    int iterator = 0;
 
+    while ( !(feof(src)) ) {
+        fscanf(src, " %d", &value);
+        if (   ( bitmap[ iterator ] == '1' ) \
+           && !( is_address_in_usage_table( (iterator + offset), table ) ) \
+        ) {
+            value += offset;
+        }
+        fwrite( &value, sizeof(int), 1, dest );
+        iterator++;
+    }
+}
+
+
+// Passa words do arquivo binário para o arquivo de texto
+void parse_bin_file_to_text(FILE *txt, FILE *bin){
+
+    int temp;
+
+    rewind(bin);
+    while ( !( feof(bin) ) ){
+        fread( &temp, sizeof(int), 1, bin);
+        if ( feof(bin) ) break;
+        fprintf(txt, " %d", temp);
+    }
+
+}
+
+
+// Resolve referências a outros módulos
+void solve_address_references(usage_table_t **usage_tables, definition_table_t **def_tables, FILE *file_ptr) {
+
+    int increment = 0;
+    int iterator, iterator2;
+    char symbol[ MAX_IDENTIFIER_WIDTH + 1 ];
+    usage_table_t *usage_ptr    = NULL;
+    definition_table_t *def_ptr = NULL;
+    address_vector_t *vector_ptr= NULL;
+    fpos_t eof_position;
+
+    fgetpos(file_ptr, &eof_position);
+
+    for ( iterator = 0 ; iterator < 3 ; iterator++ ) {
+        usage_ptr = usage_tables[ iterator ];
+        while ( usage_ptr != NULL ) {
+            strcpy(symbol, usage_ptr->symbol);
+            vector_ptr = usage_ptr->address;
+            for ( iterator2 = 0 ; iterator2 < 3 ; iterator2++ ) {
+                if ( iterator2 == iterator ) continue;
+
+                def_ptr = def_tables[ iterator2 ];
+                while ( def_ptr != NULL ) {
+                    if ( !(strcmp( symbol, def_ptr->symbol )) ){
+                        while ( vector_ptr != NULL ) {
+                            fseek( file_ptr, (vector_ptr->value * sizeof(int)), SEEK_SET );
+                            fread( &increment, sizeof(int), 1, file_ptr );
+                            fseek( file_ptr, (vector_ptr->value * sizeof(int)), SEEK_SET );
+                            increment += def_ptr->value;
+                            fwrite( &increment, sizeof(int), 1, file_ptr );
+
+                            vector_ptr = vector_ptr->next;
+                        }
+
+                        fsetpos(file_ptr, &eof_position);
+                        goto next_usage_entry;
+                    }
+
+                    def_ptr = def_ptr->next;
+                }
+            }
+            next_usage_entry:
+            usage_ptr = usage_ptr->next;
+        }
+    }
+}
+
+
+// Procura se posição de memória é referenciada na tabela de uso
+// Retorna 1 se houver referência na tabela
+int is_address_in_usage_table(int address, usage_table_t *table){
+
+    usage_table_t *table_ptr        = table;
+    address_vector_t *vector_ptr    = NULL;
+
+    while ( table_ptr != NULL ) {
+        vector_ptr = table_ptr->address;
+
+        while ( vector_ptr != NULL ) {
+            if ( vector_ptr->value == address ) return 1;
+
+            vector_ptr = vector_ptr->next;
+        }
+        table_ptr = table_ptr->next;
+    }
+
+    return 0;
+}
 
 
 
