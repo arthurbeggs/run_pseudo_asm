@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 
 
@@ -26,6 +27,14 @@
 //////////////////////////
 
 #define MAX_IDENTIFIER_WIDTH 100
+
+#define SEGFAULT "\n[Falha de Segmentação] O programa simulado tentou acessar memória fora de seus limiares.\n\tA simulação será abortada!\n"
+
+#define INVALID_INSTRUCTION "\n[Instrução Inválida] A instrução %d não é reconhecida como uma instrução válida.\n\tA simulação será abortada!\n"
+
+#define SIM_END "\n[Simulação Finalizada] A simulação chegou à instrução STOP.\n\n"
+
+#define DIV_BY_ZERO "\n[Divisão por Zero] O programa simulado tentou dividir por zero.\n\tA simulação será abortada!\n"
 
 
 /////////////////////////
@@ -119,107 +128,186 @@ void read_content_from_executable(int *content, int size, FILE *file_ptr) {
 // Simula o código do arquivo executável
 void simulate(const int *content, int size) {
 
-    int ACC = 0;
-    int PC  = 0;
+    int16_t ACC = 0;
+    int16_t PC  = 0;
 
     // Cria uma cópia modificável do conteúdo do arquivo
     int *data = (int *) malloc( size * sizeof(int) );
     memcpy( data, content, ( size * sizeof(int) ) );
 
-    while ( PC < size ){
-        if ( PC > size ){
-            // TODO: Mensagem de erro out of bounds
-        }
+    printf("\n[Simulação]\n");
+    printf("  [Obs] Números tratados como int16_t!\n\n");
+
+    while ( (PC >= 0) && (PC < size) ){
         switch ( data[ PC ] ) {
             case 1 :    // ADD
                 // printf("ADD\n");
-                ACC += data[ data[ PC + 1 ] ];
+                if ( ( data[ PC + 1 ] < 0 ) || ( data[ PC + 1 ] >= size) ) {
+                    printf(SEGFAULT);
+                    free( data );
+                    return;
+                }
+                ACC += (int16_t) data[ data[ PC + 1 ] ];
                 PC += 2;
                 break;
 
             case 2 :    // SUB
                 // printf("SUB\n");
-                ACC -= data[ data[ PC + 1 ] ];
+                if ( ( data[ PC + 1 ] < 0 ) || ( data[ PC + 1 ] >= size) ) {
+                    printf(SEGFAULT);
+                    free( data );
+                    return;
+                }
+                ACC -= (int16_t) data[ data[ PC + 1 ] ];
                 PC += 2;
                 break;
 
             case 3 :    // MULT
                 // printf("MULT\n");
-                ACC = ACC * data[ data[ PC + 1 ] ];
+                if ( ( data[ PC + 1 ] < 0 ) || ( data[ PC + 1 ] >= size) ) {
+                    printf(SEGFAULT);
+                    free( data );
+                    return;
+                }
+                ACC = (int16_t) (ACC * (int16_t) data[ data[ PC + 1 ] ]);
                 PC += 2;
                 break;
 
             case 4 :    // DIV
                 // printf("DIV\n");
-                ACC = ACC / data[ data[ PC + 1 ] ];
+                if ( ( data[ PC + 1 ] < 0 ) || ( data[ PC + 1 ] >= size) ) {
+                    printf(SEGFAULT);
+                    free( data );
+                    return;
+                }
+                if ( data[ data[ PC + 1 ] ] == 0 ) {
+                    printf(DIV_BY_ZERO);
+                    free( data );
+                    return;
+                }
+                ACC = (int16_t) (ACC / (int16_t) data[ data[ PC + 1 ] ]);
                 PC += 2;
                 break;
 
             case 5 :    // JMP
                 // printf("JMP\n");
-                PC = data[ PC + 1 ];
+                if ( ( (PC + 1) < 0 ) || ( (PC + 1) >= size) ) {
+                    printf(SEGFAULT);
+                    free( data );
+                    return;
+                }
+                PC = (int16_t) data[ PC + 1 ];
                 break;
 
             case 6 :    // JMPN
                 // printf("JMPN\n");
-                if ( ACC < 0 ) PC = data[ PC + 1 ];
-                PC += 2;
+                if ( ( (PC + 1) < 0 ) || ( (PC + 1) >= size) ) {
+                    printf(SEGFAULT);
+                    free( data );
+                    return;
+                }
+                if ( ACC < 0 ) PC = (int16_t) data[ PC + 1 ];
+                else PC += 2;
                 break;
 
             case 7 :    // JMPP
                 // printf("JMPP\n");
-                if ( ACC > 0 ) PC = data[ PC + 1 ];
-                PC += 2;
+                if ( ( (PC + 1) < 0 ) || ( (PC + 1) >= size) ) {
+                    printf(SEGFAULT);
+                    free( data );
+                    return;
+                }
+                if ( ACC > 0 ) PC = (int16_t) data[ PC + 1 ];
+                else PC += 2;
                 break;
 
             case 8 :    // JMPZ
                 // printf("JMPZ\n");
-                if ( ACC == 0 ) PC = data[ PC + 1 ];
-                PC += 2;
+                if ( ( (PC + 1) < 0 ) || ( (PC + 1) >= size) ) {
+                    printf(SEGFAULT);
+                    free( data );
+                    return;
+                }
+                if ( ACC == 0 ) PC = (int16_t) data[ PC + 1 ];
+                else PC += 2;
                 break;
 
             case 9 :    // COPY
                 // printf("COPY\n");
-                data[ PC + 2 ] = data[ PC + 1 ];
+                if ( ( data[ PC + 1 ] < 0 ) || ( data[ PC + 1 ] >= size) || ( data[ PC + 2 ] >= size) ) {
+                    printf(SEGFAULT);
+                    free( data );
+                    return;
+                }
+                data[ data[ PC + 2 ] ] = (int16_t) data[ data[ PC + 1 ] ];
                 PC += 3;
                 break;
 
             case 10 :   // LOAD
                 // printf("LOAD\n");
-                ACC = data[ PC + 1 ];
+                if ( ( data[ PC + 1 ] < 0 ) || ( data[ PC + 1 ] >= size) ) {
+                    printf(SEGFAULT);
+                    free( data );
+                    return;
+                }
+                ACC = (int16_t) data[ data[ PC + 1 ] ];
                 PC += 2;
                 break;
 
             case 11 :   // STORE
                 // printf("STORE\n");
-                data[ PC + 1 ] = ACC;
+                if ( ( data[ PC + 1 ] < 0 ) || (data[ PC + 1 ] >= size) ) {
+                    printf(SEGFAULT);
+                    free( data );
+                    return;
+                }
+                data[ data[ PC + 1 ] ] = ACC;
                 PC += 2;
                 break;
 
             case 12 :   // INPUT
                 // printf("INPUT\n");
-                scanf("%d", &data[ PC + 1 ]);
+                if ( ( data[ PC + 1 ] < 0 ) || ( data[ PC + 1 ] >= size) ) {
+                    printf(SEGFAULT);
+                    free( data );
+                    return;
+                }
+                scanf("%d", &data[ data[ PC + 1 ] ]);
                 PC += 2;
                 break;
 
             case 13 :   // OUTPUT
                 // printf("OUTPUT\n");
-                printf("%d\n", data[ PC + 1 ]);
+                if ( ( data[ PC + 1 ] < 0 ) || ( data[ PC + 1 ] >= size) ) {
+                    printf(SEGFAULT);
+                    free( data );
+                    return;
+                }
+                printf("%d\n", data[ data[ PC + 1 ] ]);
                 PC += 2;
                 break;
 
             case 14 :   // STOP
                 // Encerra simulação
                 // printf("STOP\n");
+                printf(SIM_END);
                 free( data );
                 return;
 
                 break;
 
             default :
-                // TODO: Mensagem de instrução inválida
+                printf(INVALID_INSTRUCTION, data[ PC ]);
+                return;
+
                 break;
         }
+    }
+
+    if ( (PC <= 0) || (PC >= size) ){
+        printf(SEGFAULT);
+        free( data );
+        return;
     }
 
     free( data );
