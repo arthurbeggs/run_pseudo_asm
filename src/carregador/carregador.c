@@ -22,11 +22,13 @@ int main(int argc, char const *argv[]) {
 
     // Outras variáveis
     chunk_table_t *chunk_table = NULL;
+    chunk_table_t *chunk_ptr   = NULL;
     int available_space = 0;    // Em bytes
     int selected_chunk_addr;
     char temp_string[ MAX_IDENTIFIER_WIDTH + 1 ];
     FILE *output_ptr;
     int iterator = 0;
+    int chunk_space  = 0;
 
 
     if ( invalid_arguments(argc, argv) ){
@@ -76,14 +78,28 @@ int main(int argc, char const *argv[]) {
 
     // Escreve a memória em mais de 1 chunk
     if ( selected_chunk_addr == -1 ) {
+        chunk_ptr           = chunk_table;
+        chunk_space         = chunk_ptr->size;
+        selected_chunk_addr = chunk_ptr->address;
 
+        for ( iterator = 0; iterator < file_size; iterator++ ) {
+            if ( file_reloc[ iterator ] == '0' ){
+                fprintf( output_ptr, " %d", file_content[ iterator ] );
+            }
 
+            else {
+                fprintf( output_ptr, " %d", (file_content[ iterator ] + selected_chunk_addr) );
+            }
 
+            chunk_space -= 2;
+            if ( chunk_space < 2 ) {
+                // Byte não-alinhável em words é descartado
+                chunk_ptr           = chunk_ptr->next;
+                chunk_space         = chunk_ptr->size;
+                selected_chunk_addr = chunk_ptr->address;
 
-
-
-
-
+            }
+        }
     }
 
     // Escreve a memória em um único chunk
